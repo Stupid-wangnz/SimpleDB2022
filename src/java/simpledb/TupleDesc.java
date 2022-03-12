@@ -92,6 +92,7 @@ public class TupleDesc implements Serializable {
             temItem=new TDItem(typeAr[i],null);
             tdItems.add(temItem);
         }
+
     }
 
     /**
@@ -113,7 +114,7 @@ public class TupleDesc implements Serializable {
      */
     public String getFieldName(int i) throws NoSuchElementException {
         // some code goes here
-        if(i>tdItems.size())
+        if(i>=tdItems.size()||i<0)
             throw new NoSuchElementException();
 
         return tdItems.get(i).fieldName;
@@ -147,10 +148,18 @@ public class TupleDesc implements Serializable {
      */
     public int fieldNameToIndex(String name) throws NoSuchElementException {
         // some code goes here
-        int index=-1;
-        for(int i=0;i<tdItems.size();i++)
-            if(tdItems.get(i).fieldName==name)
+
+        for(int i=0;i<tdItems.size();i++) {
+            if(tdItems.get(i).fieldName==null)
+                if(name==null)
+                    return i;
+                else
+                    continue;
+            if (tdItems.get(i).fieldName.equals(name)) {
                 return i;
+            }
+        }
+
         throw new NoSuchElementException();
         //return 0;
     }
@@ -179,18 +188,18 @@ public class TupleDesc implements Serializable {
      */
     public static TupleDesc merge(TupleDesc td1, TupleDesc td2) {
         // some code goes here
-        ArrayList<String> name = new ArrayList<>();
-        ArrayList<Type> type=new ArrayList<>();
+        String[]names=new String[td1.numFields()+ td2.numFields()];
+        Type[] types=new Type[td2.numFields()+ td1.numFields()];
         for(int i=0;i< td1.numFields();i++) {
-            name.add(td1.getFieldName(i));
-            type.add(td1.getFieldType(i));
+            names[i]= td1.getFieldName(i);
+            types[i]=td1.getFieldType(i);
         }
         for(int i= td1.numFields();i< td1.numFields()+ td2.numFields();i++)
         {
-            name.add(td2.getFieldName(i));
-            type.add(td2.getFieldType(i));
+            names[i]= td2.getFieldName(i- td1.numFields());
+            types[i]=td2.getFieldType(i- td1.numFields());
         }
-        return new TupleDesc((Type[])type.toArray(),(String[]) name.toArray());
+        return new TupleDesc(types,names);
     }
 
     /**
@@ -206,11 +215,15 @@ public class TupleDesc implements Serializable {
 
     public boolean equals(Object o) {
         // some code goes here
-        TupleDesc td=(TupleDesc)o;
-        if(td.numFields()!=this.numFields())
+        if(o==null)
+            return false;
+
+        if(o.getClass()!=this.getClass())
+            return false;
+        if(((TupleDesc)o).numFields()!=this.numFields())
             return false;
         for(int i=0;i<this.numFields();i++)
-            if(getFieldType(i)!=td.getFieldType(i))
+            if(getFieldType(i)!=((TupleDesc)o).getFieldType(i))
                 return false;
         return true;
     }
