@@ -110,7 +110,6 @@ public class HeapFile implements DbFile {
         return null;
         // not necessary for lab1
     }
-
     // see DbFile.java for javadocs
     public ArrayList<Page> deleteTuple(TransactionId tid, Tuple t) throws DbException,
             TransactionAbortedException {
