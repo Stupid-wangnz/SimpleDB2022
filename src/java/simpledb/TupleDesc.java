@@ -217,7 +217,6 @@ public class TupleDesc implements Serializable {
         // some code goes here
         if(o==null)
             return false;
-
         if(o.getClass()!=this.getClass())
             return false;
         if(((TupleDesc)o).numFields()!=this.numFields())

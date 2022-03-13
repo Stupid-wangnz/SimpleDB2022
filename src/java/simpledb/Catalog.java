@@ -24,8 +24,21 @@ public class Catalog {
      */
     public Catalog() {
         // some code goes here
+        tables=new ArrayList<>();
+        tableIDs=new ArrayList<>();
     }
-
+    class Table{
+        Table(DbFile dbFile,String name,String pkeyField){
+            this.dbFile=dbFile;
+            this.name=name;
+            this.pkeyField=pkeyField;
+        }
+        DbFile dbFile;
+        String name;
+        String pkeyField;
+    }
+    ArrayList<Table> tables;
+    ArrayList<Integer> tableIDs;
     /**
      * Add a new table to the catalog.
      * This table's contents are stored in the specified DbFile.
@@ -35,8 +48,21 @@ public class Catalog {
      * conflict exists, use the last table to be added as the table for a given name.
      * @param pkeyField the name of the primary key field
      */
+
     public void addTable(DbFile file, String name, String pkeyField) {
         // some code goes here
+        for(int i=tables.size()-1;i>=0;i--) {
+            if (tables.get(i).name.equals(name)) {
+                tables.set(i, new Table(file, name, pkeyField));
+                tableIDs.set(i, file.getId());
+                return;
+            }
+            if (tables.get(i).dbFile.getId() == file.getId()) {
+                tables.set(i, new Table(file, name, pkeyField));
+            }
+        }
+        tables.add(new Table(file,name,pkeyField));
+        tableIDs.add(file.getId());
     }
 
     public void addTable(DbFile file, String name) {
@@ -59,8 +85,13 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public int getTableId(String name) throws NoSuchElementException {
+
         // some code goes here
-        return 0;
+        for(int i=0;i<tables.size();i++)
+            if(tables.get(i).name.equals(name))
+                return tableIDs.get(i);
+        //return 0;
+        throw new NoSuchElementException();
     }
 
     /**
@@ -70,8 +101,16 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
+
         // some code goes here
-        return null;
+        int index=tableIDs.indexOf(tableid);
+        /*for(int i=0;i<tables.size();i++)
+            if(tables.get(i).dbFile.getId()==tableid)
+                return tables.get(i).dbFile.getTupleDesc();*/
+        if(index>=0)
+            return tables.get(index).dbFile.getTupleDesc();
+        //return null;
+        throw new NoSuchElementException();
     }
 
     /**
@@ -82,27 +121,45 @@ public class Catalog {
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
         // some code goes here
-        return null;
+        int index=tableIDs.indexOf(tableid);
+        /*for(int i=0;i<tables.size();i++)
+            if(tables.get(i).dbFile.getId()==tableid)
+                return tables.get(i).dbFile;*/
+        if(index>=0)
+            return tables.get(index).dbFile;
+        //return null;
+        throw new NoSuchElementException();
     }
 
     public String getPrimaryKey(int tableid) {
         // some code goes here
+        int index=tableIDs.indexOf(tableid);
+        /*for(int i=0;i<tables.size();i++)
+            if(tables.get(i).dbFile.getId()==tableid)
+                return tables.get(i).pkeyField;*/
+        if(index>=0)
+            return tables.get(index).pkeyField;
         return null;
     }
 
     public Iterator<Integer> tableIdIterator() {
         // some code goes here
-        return null;
+        return tableIDs.iterator();
     }
 
     public String getTableName(int id) {
         // some code goes here
+        int index=tableIDs.indexOf(id);
+        if(index>=0)
+            return tables.get(index).name;
         return null;
     }
     
     /** Delete all tables from the catalog */
     public void clear() {
         // some code goes here
+        tables.clear();
+        tableIDs.clear();
     }
     
     /**
