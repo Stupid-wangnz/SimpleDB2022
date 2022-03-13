@@ -24,8 +24,11 @@ public class HeapFile implements DbFile {
      */
     public HeapFile(File f, TupleDesc td) {
         // some code goes here
+        file=f;
+        tupleDesc=td;
     }
-
+    File file;
+    TupleDesc tupleDesc;
     /**
      * Returns the File backing this HeapFile on disk.
      * 
@@ -33,7 +36,7 @@ public class HeapFile implements DbFile {
      */
     public File getFile() {
         // some code goes here
-        return null;
+        return file;
     }
 
     /**
@@ -47,7 +50,10 @@ public class HeapFile implements DbFile {
      */
     public int getId() {
         // some code goes here
-        throw new UnsupportedOperationException("implement this");
+        int id;
+        id=file.getAbsoluteFile().hashCode();
+        return id;
+        //throw new UnsupportedOperationException("implement this");
     }
 
     /**
@@ -57,13 +63,16 @@ public class HeapFile implements DbFile {
      */
     public TupleDesc getTupleDesc() {
         // some code goes here
-        throw new UnsupportedOperationException("implement this");
+        return tupleDesc;
+
+        //throw new UnsupportedOperationException("implement this");
     }
 
     // see DbFile.java for javadocs
     public Page readPage(PageId pid) {
         // some code goes here
-        return null;
+        return Database.getCatalog().getDatabaseFile(this.getId()).readPage(pid);
+        //return null;
     }
 
     // see DbFile.java for javadocs
@@ -77,7 +86,9 @@ public class HeapFile implements DbFile {
      */
     public int numPages() {
         // some code goes here
-        return 0;
+        return (int)file.length()/BufferPool.getPageSize();
+
+        //return 0;
     }
 
     // see DbFile.java for javadocs
@@ -99,6 +110,7 @@ public class HeapFile implements DbFile {
     // see DbFile.java for javadocs
     public DbFileIterator iterator(TransactionId tid) {
         // some code goes here
+
         return null;
     }
 
