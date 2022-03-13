@@ -185,7 +185,6 @@ public class HeapFile implements DbFile {
             close();
             open();
         }
-
         @Override
         public void close() {
             tupleIterator=null;
