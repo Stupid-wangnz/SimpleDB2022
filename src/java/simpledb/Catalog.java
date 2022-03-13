@@ -51,14 +51,16 @@ public class Catalog {
 
     public void addTable(DbFile file, String name, String pkeyField) {
         // some code goes here
+        int index= tableIDs.indexOf(file.getId());
+        if(index>=0){
+            tables.set(index,new Table(file,name,pkeyField));
+        }
+
         for(int i=tables.size()-1;i>=0;i--) {
             if (tables.get(i).name.equals(name)) {
                 tables.set(i, new Table(file, name, pkeyField));
                 tableIDs.set(i, file.getId());
                 return;
-            }
-            if (tables.get(i).dbFile.getId() == file.getId()) {
-                tables.set(i, new Table(file, name, pkeyField));
             }
         }
         tables.add(new Table(file,name,pkeyField));
