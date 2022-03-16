@@ -20,13 +20,12 @@ public class Tuple implements Serializable {
      *            the schema of this tuple. It must be a valid TupleDesc
      *            instance with at least one field.
      */
-    TupleDesc td;
-    RecordId rid;
+    TupleDesc tupleDesc;
+    RecordId recordId;
     ArrayList<Field> fields;
     public Tuple(TupleDesc td) {
         // some code goes here
-        this.td=td;
-
+        this.tupleDesc =td;
         fields=new ArrayList<>(td.numFields());
         for(int i=0;i< td.numFields();i++)
             fields.add(null);
@@ -37,7 +36,7 @@ public class Tuple implements Serializable {
      */
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return this.td;
+        return this.tupleDesc;
     }
 
     /**
@@ -46,7 +45,7 @@ public class Tuple implements Serializable {
      */
     public RecordId getRecordId() {
         // some code goes here
-        return this.rid;
+        return this.recordId;
 
     }
 
@@ -58,7 +57,7 @@ public class Tuple implements Serializable {
      */
     public void setRecordId(RecordId rid) {
         // some code goes here
-        this.rid=rid;
+        this.recordId =rid;
     }
 
     /**
@@ -71,7 +70,6 @@ public class Tuple implements Serializable {
      */
     public void setField(int i, Field f) {
         // some code goes here
-
         fields.set(i, f);
     }
 
@@ -124,7 +122,8 @@ public class Tuple implements Serializable {
     public void resetTupleDesc(TupleDesc td)
     {
         // some code goes here
-        this.td=td;
+
+        this.tupleDesc =td;
         fields=new ArrayList<>(td.numFields());
         for(int i=0;i< td.numFields();i++)
             fields.add(null);

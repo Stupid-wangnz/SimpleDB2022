@@ -69,6 +69,7 @@ public class HeapPage implements Page {
         // some code goes here
 
         return (BufferPool.getPageSize()*8)/(td.getSize()*8+1);
+
     }
 
     /**

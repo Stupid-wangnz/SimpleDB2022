@@ -132,7 +132,7 @@ public class TupleDesc implements Serializable {
      */
     public Type getFieldType(int i) throws NoSuchElementException {
         // some code goes here
-        if(i>tdItems.size())
+        if(i>=tdItems.size()||i<0)
             throw new NoSuchElementException();
         return tdItems.get(i).fieldType;
     }
@@ -217,8 +217,9 @@ public class TupleDesc implements Serializable {
         // some code goes here
         if(o==null)
             return false;
-        if(o.getClass()!=this.getClass())
+        if(o.getClass()!=TupleDesc.class)
             return false;
+
         if(((TupleDesc)o).numFields()!=this.numFields())
             return false;
         for(int i=0;i<this.numFields();i++)
@@ -230,7 +231,8 @@ public class TupleDesc implements Serializable {
     public int hashCode() {
         // If you want to use TupleDesc as keys for HashMap, implement this so
         // that equal objects have equals hashCode() results
-        throw new UnsupportedOperationException("unimplemented");
+        return this.toString().hashCode();
+        //throw new UnsupportedOperationException("unimplemented");
     }
 
     /**
