@@ -52,8 +52,10 @@ public class Catalog {
     public void addTable(DbFile file, String name, String pkeyField) {
         // some code goes here
         int index= tableIDs.indexOf(file.getId());
+
         if(index>=0){
             tables.set(index,new Table(file,name,pkeyField));
+            return;
         }
 
         for(int i=tables.size()-1;i>=0;i--) {
@@ -168,6 +170,7 @@ public class Catalog {
      * Reads the schema from a file and creates the appropriate tables in the database.
      * @param catalogFile
      */
+
     public void loadSchema(String catalogFile) {
         String line = "";
         String baseFolder=new File(new File(catalogFile).getAbsolutePath()).getParent();
