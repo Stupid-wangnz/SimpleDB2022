@@ -123,7 +123,7 @@ public class HeapFile implements DbFile {
 
         return new HeapFileIterator(this,tid);
     }
-    public static class HeapFileIterator implements DbFileIterator{
+    public static  class HeapFileIterator implements DbFileIterator{
 
         HeapFile heapFile;
         TransactionId transactionId;
