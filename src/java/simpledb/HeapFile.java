@@ -171,7 +171,7 @@ public class HeapFile implements DbFile {
         public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
             //return null;
             if(tupleIterator==null)
-                throw new DbException("null pointer");
+                throw new NoSuchElementException("null pointer");
 
             if(tupleIterator.hasNext())
                 return tupleIterator.next();
