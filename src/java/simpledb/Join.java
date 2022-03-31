@@ -117,17 +117,18 @@ public class Join extends Operator {
                 t1=opIterator1.next();
 
             //Tuple t1=opIterator1.next();
-            while (opIterator2.hasNext()){
-                Tuple t2=opIterator2.next();
-                if(joinPredicate.filter(t1,t2)){
-                    Tuple res_t=new Tuple(this.getTupleDesc());
-                    for (int i=0;i<t1.fields.size();i++)
-                        res_t.setField(i,t1.getField(i));
-                    for (int i=t1.fields.size();i<t1.fields.size()+t2.fields.size();i++)
-                        res_t.setField(i,t2.getField(i-t1.fields.size()));
+            while (opIterator2.hasNext()) {
+                Tuple t2 = opIterator2.next();
+                if (joinPredicate.filter(t1, t2)) {
+                    Tuple res_t = new Tuple(this.getTupleDesc());
+                    for (int i = 0; i < t1.fields.size(); i++)
+                        res_t.setField(i, t1.getField(i));
+                    for (int i = t1.fields.size(); i < t1.fields.size() + t2.fields.size(); i++)
+                        res_t.setField(i, t2.getField(i - t1.fields.size()));
                     return res_t;
                 }
             }
+            //不知道为什么这种格式不行，逻辑上一个意思
             /*if(opIterator1.hasNext())
                 t1=opIterator1.next();*/
             t1=null;
