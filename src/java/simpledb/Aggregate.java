@@ -31,7 +31,15 @@ public class Aggregate extends Operator {
      */
     public Aggregate(OpIterator child, int afield, int gfield, Aggregator.Op aop) {
 	// some code goes here
+        this.afield=afield;
+        this.child=child;
+        this.afield=afield;
+        this.aop=aop;
     }
+    OpIterator child;
+    int afield;
+    int gfield;
+    Aggregator.Op aop;
 
     /**
      * @return If this aggregate is accompanied by a groupby, return the groupby
@@ -40,7 +48,9 @@ public class Aggregate extends Operator {
      * */
     public int groupField() {
 	// some code goes here
-	return -1;
+
+       return gfield;
+	//return -1;
     }
 
     /**
@@ -50,6 +60,7 @@ public class Aggregate extends Operator {
      * */
     public String groupFieldName() {
 	// some code goes here
+
 	return null;
     }
 

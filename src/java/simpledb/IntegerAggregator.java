@@ -1,5 +1,7 @@
 package simpledb;
 
+import java.util.*;
+
 /**
  * Knows how to compute some aggregate over a set of IntFields.
  */
@@ -21,11 +23,22 @@ public class IntegerAggregator implements Aggregator {
      * @param what
      *            the aggregation operator
      */
-
     public IntegerAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
-        // some code goes here
-    }
+        this.gbfield = gbfield;
+        this.gbfieldtype = gbfieldtype;
+        this.afield = afield;
+        this.what = what;
 
+        hashMap=new HashMap<>();
+        fieldNames=new String[2];
+    }
+    int gbfield;
+    Type gbfieldtype;
+    int afield;
+    Op what;
+    ArrayList<Integer>list;
+    HashMap<Field,Integer>hashMap;
+    String[]fieldNames;
     /**
      * Merge a new tuple into the aggregate, grouping as indicated in the
      * constructor
@@ -35,6 +48,62 @@ public class IntegerAggregator implements Aggregator {
      */
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
+
+        fieldNames[0]=tup.getTupleDesc().getFieldName(gbfield);
+        fieldNames[1]=tup.getTupleDesc().getFieldName(afield);
+
+        Field aField=tup.getField(this.afield);
+        Field gbField=gbfield==NO_GROUPING?null:tup.getField(this.gbfield);
+        int value=((IntField)aField).getValue();
+
+        switch (this.what){
+            case MIN:
+                if(!hashMap.containsKey(gbField)){
+                    hashMap.put(gbField,value);
+                }
+                else
+                    hashMap.put(gbField,Math.min(hashMap.get(gbField),value));
+                break;
+
+            case MAX:
+                if(!hashMap.containsKey(gbField)){
+                    hashMap.put(gbField,value);
+                }
+                else
+                    hashMap.put(gbField,Math.max(hashMap.get(gbField),value));
+                break;
+
+            case COUNT:
+                if(hashMap.containsKey(gbField)){
+                    hashMap.put(gbField,hashMap.get(gbField)+1);
+
+                }
+                else
+                    hashMap.put(gbField,1);
+                break;
+            case SUM:
+                if(!hashMap.containsKey(gbField)){
+                    hashMap.put(gbField,value);
+                }
+                else
+                    hashMap.put(gbField,hashMap.get(gbField)+value);
+                break;
+            case AVG:
+                if(!hashMap.containsKey(gbField)){
+                    list=new ArrayList<>();
+                    list.add(value);
+                    hashMap.put(gbField,value);
+                }
+                else{
+                    list.add(value);
+                    int count=0;
+                    for (int i=0;i<list.size();i++){
+                        count+=list.get(i);
+                    }
+                    hashMap.put(gbField,count/list.size());
+                }
+                break;
+        }
     }
 
     /**
@@ -47,8 +116,73 @@ public class IntegerAggregator implements Aggregator {
      */
     public OpIterator iterator() {
         // some code goes here
-        throw new
-        UnsupportedOperationException("please implement me for lab2");
+            return new IntegerAggregatorIterator();
     }
 
+    //实现IntegerAggregatorIterator
+    private class IntegerAggregatorIterator implements OpIterator{
+
+        private HashMap<Field,Integer> hashMap;
+        private Iterator<Tuple> iterator;
+        private TupleDesc tupleDesc;
+        private ArrayList<Tuple> TupleList;
+        public IntegerAggregatorIterator(){
+            hashMap=IntegerAggregator.this.hashMap;
+            Type[] type=new Type[2];
+            type[0]=gbfieldtype;
+            type[1]=Type.INT_TYPE;
+            String[] fieldName=new String[2];
+            fieldName[0]=fieldNames[0];
+            fieldName[1]=fieldNames[1];
+            tupleDesc=new TupleDesc(type,fieldName);
+            TupleList=new ArrayList<>();
+            for(Field field:hashMap.keySet()){
+                Tuple tuple=new Tuple(tupleDesc);
+                tuple.setField(0,field);
+                tuple.setField(1,new IntField(hashMap.get(field)));
+                TupleList.add(tuple);
+            }
+
+        }
+
+        @Override
+        public void open() throws DbException, TransactionAbortedException {
+
+            iterator=TupleList.iterator();
+        }
+
+        @Override
+        public boolean hasNext() throws DbException, TransactionAbortedException {
+            return iterator.hasNext();
+        }
+
+        @Override
+        public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
+            return iterator.next();
+        }
+
+        @Override
+        public void rewind() throws DbException, TransactionAbortedException {
+            iterator=TupleList.iterator();
+        }
+
+        @Override
+        public TupleDesc getTupleDesc() {
+            return tupleDesc;
+        }
+
+        @Override
+        public void close() {
+            iterator=null;
+        }
+    }
+
+
 }
+
+
+
+
+
+
+
