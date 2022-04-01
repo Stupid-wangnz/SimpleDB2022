@@ -1,5 +1,10 @@
 package simpledb;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 /**
  * Knows how to compute some aggregate over a set of StringFields.
  */
@@ -18,7 +23,23 @@ public class StringAggregator implements Aggregator {
 
     public StringAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
         // some code goes here
+        this.gbfield = gbfield;
+        this.gbfieldtype = gbfieldtype;
+        this.afield = afield;
+        this.what = what;
+
+        hashMap= new HashMap<Field,Integer>();
+        fieldNames=new String[2];
+
+        if (what != Op.COUNT)
+            throw new IllegalArgumentException("StringAggregator only supports COUNT");
     }
+    int gbfield;
+    Type gbfieldtype;
+    int afield;
+    Op what;
+    HashMap<Field,Integer>hashMap;
+    String [] fieldNames;
 
     /**
      * Merge a new tuple into the aggregate, grouping as indicated in the constructor
@@ -26,6 +47,16 @@ public class StringAggregator implements Aggregator {
      */
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
+
+        Field aField=tup.getField(this.afield);
+        Field gbField=gbfield==NO_GROUPING?null:tup.getField(this.gbfield);
+
+        if(!hashMap.containsKey(gbField)){
+            hashMap.put(gbField,1);
+        }
+        else
+            hashMap.put(gbField,hashMap.get(gbField)+1);
+
     }
 
     /**
@@ -38,7 +69,60 @@ public class StringAggregator implements Aggregator {
      */
     public OpIterator iterator() {
         // some code goes here
-        throw new UnsupportedOperationException("please implement me for lab2");
+        return new StringAggregatorIterator();
     }
+    private class StringAggregatorIterator implements OpIterator{
 
+        private HashMap<Field,Integer> hashMap;
+        private Iterator<Tuple> iterator;
+        private TupleDesc tupleDesc;
+        private ArrayList<Tuple> TupleList;
+
+        StringAggregatorIterator(){
+            hashMap=StringAggregator.this.hashMap;
+            Type []type=new Type[2];
+            String [] fieldName=new String[2];
+            type[0]=gbfieldtype;
+            type[1]=Type.INT_TYPE;
+            fieldName[0]=fieldNames[0];
+            fieldName[1]=fieldNames[1];
+            tupleDesc=new TupleDesc(type,fieldName);
+            TupleList=new ArrayList<>();
+            for(Field field:hashMap.keySet()){
+                Tuple tuple=new Tuple(tupleDesc);
+                tuple.setField(0,field);
+                tuple.setField(1,new IntField(hashMap.get(field)));
+                TupleList.add(tuple);
+            }
+        }
+        @Override
+        public void open() throws DbException, TransactionAbortedException {
+            iterator=TupleList.iterator();
+        }
+
+        @Override
+        public boolean hasNext() throws DbException, TransactionAbortedException {
+            return iterator.hasNext();
+        }
+
+        @Override
+        public Tuple next() throws DbException, TransactionAbortedException, NoSuchElementException {
+            return iterator.next();
+        }
+
+        @Override
+        public void rewind() throws DbException, TransactionAbortedException {
+            this.open();
+        }
+
+        @Override
+        public TupleDesc getTupleDesc() {
+            return tupleDesc;
+        }
+
+        @Override
+        public void close() {
+            iterator=null;
+        }
+    }
 }
