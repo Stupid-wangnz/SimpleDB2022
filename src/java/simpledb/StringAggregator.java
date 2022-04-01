@@ -47,6 +47,9 @@ public class StringAggregator implements Aggregator {
      */
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
+        if(gbfield!=NO_GROUPING)
+            fieldNames[0]=tup.getTupleDesc().getFieldName(gbfield);
+        fieldNames[1]=tup.getTupleDesc().getFieldName(afield);
 
         Field aField=tup.getField(this.afield);
         Field gbField=gbfield==NO_GROUPING?null:tup.getField(this.gbfield);
@@ -86,12 +89,20 @@ public class StringAggregator implements Aggregator {
             type[1]=Type.INT_TYPE;
             fieldName[0]=fieldNames[0];
             fieldName[1]=fieldNames[1];
-            tupleDesc=new TupleDesc(type,fieldName);
+            if(gbfield!=NO_GROUPING)
+                tupleDesc=new TupleDesc(type,fieldName);
+            else
+                tupleDesc=new TupleDesc(new Type[]{type[1]},new String[]{fieldNames[1]});
             TupleList=new ArrayList<>();
             for(Field field:hashMap.keySet()){
                 Tuple tuple=new Tuple(tupleDesc);
-                tuple.setField(0,field);
-                tuple.setField(1,new IntField(hashMap.get(field)));
+                if(gbfield!=NO_GROUPING) {
+                    tuple.setField(0, field);
+                    tuple.setField(1, new IntField(hashMap.get(field)));
+                }
+                else {
+                    tuple.setField(0,new IntField(hashMap.get(field)));
+                }
                 TupleList.add(tuple);
             }
         }
