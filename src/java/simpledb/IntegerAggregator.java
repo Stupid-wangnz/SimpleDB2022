@@ -30,6 +30,7 @@ public class IntegerAggregator implements Aggregator {
         this.what = what;
 
         hashMap=new HashMap<>();
+        avgHashmap=new HashMap<>();
         fieldNames=new String[2];
     }
     int gbfield;
@@ -38,6 +39,7 @@ public class IntegerAggregator implements Aggregator {
     Op what;
     ArrayList<Integer>list;
     HashMap<Field,Integer>hashMap;
+    HashMap<Field,ArrayList<Integer>>avgHashmap;
     String[]fieldNames;
     /**
      * Merge a new tuple into the aggregate, grouping as indicated in the
@@ -62,7 +64,7 @@ public class IntegerAggregator implements Aggregator {
                     hashMap.put(gbField,value);
                 }
                 else
-                    hashMap.put(gbField,Math.min(hashMap.get(gbField),value));
+                    hashMap.replace(gbField,Math.min(hashMap.get(gbField),value));
                 break;
 
             case MAX:
@@ -70,13 +72,12 @@ public class IntegerAggregator implements Aggregator {
                     hashMap.put(gbField,value);
                 }
                 else
-                    hashMap.put(gbField,Math.max(hashMap.get(gbField),value));
+                    hashMap.replace(gbField,Math.max(hashMap.get(gbField),value));
                 break;
 
             case COUNT:
                 if(hashMap.containsKey(gbField)){
-                    hashMap.put(gbField,hashMap.get(gbField)+1);
-
+                    hashMap.replace(gbField,hashMap.get(gbField)+1);
                 }
                 else
                     hashMap.put(gbField,1);
@@ -85,22 +86,28 @@ public class IntegerAggregator implements Aggregator {
                 if(!hashMap.containsKey(gbField)){
                     hashMap.put(gbField,value);
                 }
-                else
-                    hashMap.put(gbField,hashMap.get(gbField)+value);
+                else {
+                    int sum=hashMap.get(gbField);
+                    sum+=value;
+
+                    hashMap.replace(gbField, sum);
+                }
                 break;
             case AVG:
                 if(!hashMap.containsKey(gbField)){
-                    list=new ArrayList<>();
+                    list=new ArrayList<Integer>();
                     list.add(value);
+                    avgHashmap.put(gbField,list);
                     hashMap.put(gbField,value);
                 }
                 else{
+                    ArrayList<Integer>list=avgHashmap.get(gbField);
                     list.add(value);
-                    int count=0;
-                    for (int i=0;i<list.size();i++){
-                        count+=list.get(i);
-                    }
-                    hashMap.put(gbField,count/list.size());
+                    int avg=0;
+                    for(int i=0;i<list.size();i++)
+                        avg+=list.get(i);
+                    avg/=list.size();
+                    hashMap.replace(gbField,avg);
                 }
                 break;
         }
@@ -157,7 +164,6 @@ public class IntegerAggregator implements Aggregator {
 
         @Override
         public void open() throws DbException, TransactionAbortedException {
-
             iterator=TupleList.iterator();
         }
 
