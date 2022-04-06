@@ -24,10 +24,12 @@ public class Delete extends Operator {
         transactionId=t;
         childOpIterator=child;
         tupleDesc=new TupleDesc(new Type[]{Type.INT_TYPE},new String[]{"Deleted Records"});
+        called=false;
     }
     TransactionId transactionId;
     OpIterator childOpIterator;
     TupleDesc tupleDesc;
+    boolean called;
 
     public TupleDesc getTupleDesc() {
         // some code goes here
@@ -36,12 +38,16 @@ public class Delete extends Operator {
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
+        super.open();
         childOpIterator.open();
+        called=false;
     }
 
     public void close() {
         // some code goes here
+        super.close();
         childOpIterator.close();
+        called=true;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
@@ -61,6 +67,10 @@ public class Delete extends Operator {
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
         //return null;
+        if(called)
+            return null;
+
+        called=true;
         int count=0;
         while(childOpIterator.hasNext()){
             Tuple tuple=childOpIterator.next();

@@ -44,16 +44,21 @@ public class Insert extends Operator {
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
+        super.open();
         childOpIterator.open();
+        called=false;
     }
 
     public void close() {
         // some code goes here
+        super.close();
         childOpIterator.close();
+        called=false;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         // some code goes here
+
         childOpIterator.rewind();
     }
 
@@ -77,6 +82,8 @@ public class Insert extends Operator {
         called=true;
 
         int count=0;
+
+
         while (childOpIterator.hasNext()) {
             Tuple t=childOpIterator.next();
             try {

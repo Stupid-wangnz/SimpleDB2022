@@ -90,6 +90,14 @@ public class HeapFile implements DbFile {
     // see DbFile.java for javadocs
     public void writePage(Page page) throws IOException {
         // some code goes here
+
+        int pageno=page.getId().getPageNumber();
+
+        RandomAccessFile randomAccessFile=new RandomAccessFile(getFile(),"rw");
+        int st=pageno*BufferPool.getPageSize();
+        randomAccessFile.seek(st);
+        randomAccessFile.write(page.getPageData());
+
         // not necessary for lab1
     }
 

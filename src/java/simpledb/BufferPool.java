@@ -73,7 +73,7 @@ public class BufferPool {
         throws TransactionAbortedException, DbException {
         // some code goes here
         if(pageConcurrentHashMap.size()>=numPages)
-            throw new DbException("out of size");
+            evictPage();
 
         if(!pageConcurrentHashMap.containsKey(pid.hashCode())){
             DbFile dbFile=Database.getCatalog().getDatabaseFile(pid.getTableId());
@@ -176,7 +176,7 @@ public class BufferPool {
         // some code goes here
         int tableId=t.getRecordId().getPageId().getTableId();
         DbFile dbFile=Database.getCatalog().getDatabaseFile(tableId);
-        System.out.println(t);
+        //System.out.println(t);
         ArrayList<Page>pages=dbFile.deleteTuple(tid,t);
         for(int i=0;i<pages.size();i++){
             pages.get(i).markDirty(true,tid);
@@ -194,6 +194,13 @@ public class BufferPool {
         // some code goes here
         // not necessary for lab1
 
+        for(Page page:pageConcurrentHashMap.values()){
+            if(page.isDirty()!=null){
+                flushPage(page.getId());
+            }
+        }
+
+
     }
 
     /** Remove the specific page id from the buffer pool.
@@ -207,6 +214,8 @@ public class BufferPool {
     public synchronized void discardPage(PageId pid) {
         // some code goes here
         // not necessary for lab1
+
+        pageConcurrentHashMap.remove(pid.hashCode());
     }
 
     /**
@@ -215,6 +224,16 @@ public class BufferPool {
      */
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
+
+        int hash=pid.hashCode();
+        Page page=pageConcurrentHashMap.get(hash);
+        if(page.isDirty()!=null)
+            return;
+
+        DbFile dbFile=Database.getCatalog().getDatabaseFile(pid.getTableId());
+        dbFile.writePage(page);
+        page.markDirty(false,null);
+
         // not necessary for lab1
     }
 
@@ -232,6 +251,25 @@ public class BufferPool {
     private synchronized  void evictPage() throws DbException {
         // some code goes here
         // not necessary for lab1
+        Page removedPage=null;
+        for(Page page:pageConcurrentHashMap.values()){
+            if(page.isDirty()==null){
+                removedPage=page;
+                break;
+            }
+        }
+
+        if(removedPage==null)
+            throw new DbException("all dirty page");
+
+        try {
+            flushPage(removedPage.getId());
+            discardPage(removedPage.getId());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
     }
 
 }
