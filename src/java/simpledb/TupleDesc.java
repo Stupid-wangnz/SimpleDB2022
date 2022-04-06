@@ -223,7 +223,7 @@ public class TupleDesc implements Serializable {
         if(((TupleDesc)o).numFields()!=this.numFields())
             return false;
         for(int i=0;i<this.numFields();i++)
-            if(getFieldType(i)!=((TupleDesc)o).getFieldType(i))
+            if(!getFieldType(i).equals(((TupleDesc)o).getFieldType(i)))
                 return false;
         return true;
     }
@@ -247,7 +247,7 @@ public class TupleDesc implements Serializable {
         String ret="";
         for(int i=0;i<numFields();i++)
         {
-            ret+=getFieldType(i)+"("+getFieldName(i)+")";
+            ret+=getFieldType(i)+"["+i+"]"+"("+getFieldName(i)+")";
             if(i!=numFields()-1)
                 ret+=",";
         }

@@ -1,5 +1,7 @@
 package simpledb;
 
+import java.io.IOException;
+
 /**
  * Inserts tuples read from the child operator into the tableId specified in the
  * constructor
@@ -24,23 +26,35 @@ public class Insert extends Operator {
     public Insert(TransactionId t, OpIterator child, int tableId)
             throws DbException {
         // some code goes here
+        this.transactionId=t;
+        this.childOpIterator=child;
+        this.tableId=tableId;
+        called=false;
     }
+
+    TransactionId transactionId;
+    OpIterator childOpIterator;
+    int tableId;
+    boolean called;
 
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return null;
+        return new TupleDesc(new Type[]{Type.INT_TYPE},new String[]{"Inserted Records"});
     }
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
+        childOpIterator.open();
     }
 
     public void close() {
         // some code goes here
+        childOpIterator.close();
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         // some code goes here
+        childOpIterator.rewind();
     }
 
     /**
@@ -58,17 +72,36 @@ public class Insert extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+        if(called)
+            return null;
+        called=true;
+
+        int count=0;
+        while (childOpIterator.hasNext()) {
+            Tuple t=childOpIterator.next();
+            try {
+                Database.getBufferPool().insertTuple(transactionId,tableId,t);
+                count++;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        }
+        TupleDesc tupleDesc=new TupleDesc(new Type[]{Type.INT_TYPE},new String[]{"Inserted Records"});
+        Tuple tuple=new Tuple(tupleDesc);
+        tuple.setField(0,new IntField(count));
+        return tuple;
     }
 
     @Override
     public OpIterator[] getChildren() {
         // some code goes here
-        return null;
+        return new OpIterator[]{childOpIterator};
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
         // some code goes here
+        childOpIterator=children[0];
     }
 }
