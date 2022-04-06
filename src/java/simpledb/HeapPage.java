@@ -249,6 +249,17 @@ public class HeapPage implements Page {
     public void deleteTuple(Tuple t) throws DbException {
         // some code goes here
         // not necessary for lab1
+
+        int tupleno=t.getRecordId().getTupleNumber();
+
+        if(tuples[tupleno]!=null&&isSlotUsed(tupleno)&&tuples[tupleno].equals(t))
+        {
+            markSlotUsed(tupleno,false);
+            tuples[tupleno]=null;
+            return;
+        }
+
+        throw new DbException("delete fail");
     }
 
     /**
@@ -261,6 +272,20 @@ public class HeapPage implements Page {
     public void insertTuple(Tuple t) throws DbException {
         // some code goes here
         // not necessary for lab1
+
+        if(!t.getTupleDesc().equals(this.td)||this.getNumEmptySlots()==0)
+            throw new DbException("insert fail");
+
+
+        for(int i=0;i<this.numSlots;i++){
+            if(!this.isSlotUsed(i))
+            {
+                this.markSlotUsed(i,true);
+                tuples[i]=t;
+                t.setRecordId(new RecordId(getId(),i));
+                return;
+            }
+        }
     }
 
     /**
@@ -314,6 +339,25 @@ public class HeapPage implements Page {
     private void markSlotUsed(int i, boolean value) {
         // some code goes here
         // not necessary for lab1
+        int byte_va=i/8;
+        int bit_va=i%8;
+
+        int byte_num=header[byte_va];
+
+        if(value)
+        {
+            int k=1;
+            k=k<<bit_va;
+            header[byte_va]|=k;
+        }
+        else
+        {
+            int k=1;
+            k=k<<bit_va;
+            k=~k;
+            header[byte_va]&=k;
+        }
+
     }
 
     /**

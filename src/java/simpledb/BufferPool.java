@@ -147,6 +147,9 @@ public class BufferPool {
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
+
+
+
         // not necessary for lab1
     }
 
