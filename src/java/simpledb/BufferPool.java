@@ -262,12 +262,9 @@ public class BufferPool {
         if(removedPage==null)
             throw new DbException("all dirty page");
 
-        try {
-            flushPage(removedPage.getId());
-            discardPage(removedPage.getId());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+        discardPage(removedPage.getId());
+
 
 
     }
