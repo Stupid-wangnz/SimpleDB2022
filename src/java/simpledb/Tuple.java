@@ -3,6 +3,7 @@ package simpledb;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Objects;
 
 /**
  * Tuple maintains information about the contents of a tuple. Tuples have a
@@ -114,6 +115,27 @@ public class Tuple implements Serializable {
     {
         // some code goes here
         return fields.iterator();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Tuple)) return false;
+        Tuple tuple = (Tuple) o;
+
+        if(!getTupleDesc().equals(tuple.getTupleDesc()))
+            return false;
+
+        for(int i=0;i<fields.size();i++)
+            if(!fields.get(i).equals(tuple.fields.get(i)))
+                return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getTupleDesc(), fields);
     }
 
     /**

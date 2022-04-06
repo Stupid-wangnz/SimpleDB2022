@@ -148,7 +148,12 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
 
-
+        DbFile dbFile=Database.getCatalog().getDatabaseFile(tableId);
+        ArrayList<Page>pages=dbFile.insertTuple(tid,t);
+        for(int i=0;i<pages.size();i++){
+            pages.get(i).markDirty(true,tid);
+            pageConcurrentHashMap.put(pages.get(i).getId().hashCode(),pages.get(i));
+        }
 
         // not necessary for lab1
     }
@@ -169,6 +174,14 @@ public class BufferPool {
     public  void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
+        int tableId=t.getRecordId().getPageId().getTableId();
+        DbFile dbFile=Database.getCatalog().getDatabaseFile(tableId);
+        System.out.println(t);
+        ArrayList<Page>pages=dbFile.deleteTuple(tid,t);
+        for(int i=0;i<pages.size();i++){
+            pages.get(i).markDirty(true,tid);
+            pageConcurrentHashMap.put(pages.get(i).getId().hashCode(),pages.get(i));
+        }
         // not necessary for lab1
     }
 
