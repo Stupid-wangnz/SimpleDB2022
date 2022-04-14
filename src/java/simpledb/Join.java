@@ -26,6 +26,7 @@ public class Join extends Operator {
         opIterator1=child1;
         opIterator2=child2;
         t1=null;
+        set=new HashSet<Tuple>();
     }
     JoinPredicate joinPredicate;
     OpIterator opIterator1;
@@ -88,6 +89,8 @@ public class Join extends Operator {
         //super.rewind();
         opIterator2.rewind();
         opIterator1.rewind();
+        t1=null;
+        set.clear();
     }
 
     /**
@@ -109,6 +112,7 @@ public class Join extends Operator {
      * @see JoinPredicate#filter
      */
     Tuple t1;
+    HashSet<Tuple> set;
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
 
@@ -125,6 +129,10 @@ public class Join extends Operator {
                         res_t.setField(i, t1.getField(i));
                     for (int i = t1.fields.size(); i < t1.fields.size() + t2.fields.size(); i++)
                         res_t.setField(i, t2.getField(i - t1.fields.size()));
+
+                    if(set.contains(res_t))
+                        continue;
+                    set.add(res_t);
                     return res_t;
                 }
             }
