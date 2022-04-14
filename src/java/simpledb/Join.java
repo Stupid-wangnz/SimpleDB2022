@@ -129,7 +129,8 @@ public class Join extends Operator {
                         res_t.setField(i, t1.getField(i));
                     for (int i = t1.fields.size(); i < t1.fields.size() + t2.fields.size(); i++)
                         res_t.setField(i, t2.getField(i - t1.fields.size()));
-
+                    if(!joinPredicate.getOperator().equals(Predicate.Op.EQUALS))
+                        return res_t;
                     if(set.contains(res_t))
                         continue;
                     set.add(res_t);
