@@ -1,5 +1,8 @@
 package simpledb;
 
+
+import javafx.util.Pair;
+
 import java.util.*;
 
 /**
@@ -30,8 +33,9 @@ public class IntegerAggregator implements Aggregator {
         this.what = what;
 
         hashMap=new HashMap<>();
-        avgHashmap=new HashMap<>();
         fieldNames=new String[2];
+
+        countHashMap=new HashMap<>();
     }
     int gbfield;
     Type gbfieldtype;
@@ -39,8 +43,9 @@ public class IntegerAggregator implements Aggregator {
     Op what;
     ArrayList<Integer>list;
     HashMap<Field,Integer>hashMap;
-    HashMap<Field,ArrayList<Integer>>avgHashmap;
+
     String[]fieldNames;
+    HashMap<Field, Integer[]>countHashMap;
     /**
      * Merge a new tuple into the aggregate, grouping as indicated in the
      * constructor
@@ -53,11 +58,13 @@ public class IntegerAggregator implements Aggregator {
         if(gbfield!=NO_GROUPING)
             fieldNames[0]=tup.getTupleDesc().getFieldName(gbfield);
         fieldNames[1]=tup.getTupleDesc().getFieldName(afield);
-
+        //聚合field
         Field aField=tup.getField(this.afield);
+        //分组field
         Field gbField=gbfield==NO_GROUPING?null:tup.getField(this.gbfield);
 
         int value=((IntField)aField).getValue();
+
         switch (this.what){
             case MIN:
                 if(!hashMap.containsKey(gbField)){
@@ -95,19 +102,19 @@ public class IntegerAggregator implements Aggregator {
                 break;
             case AVG:
                 if(!hashMap.containsKey(gbField)){
-                    list=new ArrayList<Integer>();
-                    list.add(value);
-                    avgHashmap.put(gbField,list);
+                    Integer[]arr=new Integer[2];
+                    arr[0]=value;
+                    arr[1]=1;
+                    countHashMap.put(gbField,arr);
+
                     hashMap.put(gbField,value);
                 }
-                else{
-                    ArrayList<Integer>list=avgHashmap.get(gbField);
-                    list.add(value);
-                    int avg=0;
-                    for(int i=0;i<list.size();i++)
-                        avg+=list.get(i);
-                    avg/=list.size();
-                    hashMap.replace(gbField,avg);
+                else {
+                    Integer[] arr = countHashMap.get(gbField);
+                    arr[0] += value;
+                    arr[1]++;
+                    countHashMap.replace(gbField, arr);
+                    hashMap.replace(gbField, arr[0] / arr[1]);
                 }
                 break;
         }
