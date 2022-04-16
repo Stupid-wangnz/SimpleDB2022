@@ -288,7 +288,7 @@ public class HeapPage implements Page {
             {
                 this.markSlotUsed(i,true);
                 tuples[i]=t;
-                t.setRecordId(new RecordId(getId(),i));
+                tuples[i].setRecordId(new RecordId(getId(),i));
                 return;
             }
         }
@@ -355,8 +355,6 @@ public class HeapPage implements Page {
         // not necessary for lab1
         int byte_va=i/8;
         int bit_va=i%8;
-
-        int byte_num=header[byte_va];
 
         if(value)
         {
