@@ -227,7 +227,7 @@ public class BufferPool {
 
         int hash=pid.hashCode();
         Page page=pageConcurrentHashMap.get(hash);
-        if(page.isDirty()!=null)
+        if(page.isDirty()==null)
             return;
 
         DbFile dbFile=Database.getCatalog().getDatabaseFile(pid.getTableId());

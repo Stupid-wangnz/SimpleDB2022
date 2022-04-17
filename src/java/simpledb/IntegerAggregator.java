@@ -26,7 +26,7 @@ public class IntegerAggregator implements Aggregator {
      * @param what
      *            the aggregation operator
      */
-    public IntegerAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
+        public IntegerAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
         this.gbfield = gbfield;
         this.gbfieldtype = gbfieldtype;
         this.afield = afield;
