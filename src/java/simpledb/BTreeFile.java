@@ -195,7 +195,32 @@ public class BTreeFile implements DbFile {
 			Field f) 
 					throws DbException, TransactionAbortedException {
 		// some code goes here
-        return null;
+
+		if(pid.pgcateg() == BTreePageId.LEAF){
+			BTreeLeafPage leaf = (BTreeLeafPage) getPage(tid,dirtypages,pid,perm);
+			return leaf;
+		}
+
+		BTreeInternalPage cur_page=(BTreeInternalPage) getPage(tid,dirtypages,pid,Permissions.READ_ONLY);
+		if(f==null){
+			return findLeafPage(tid,dirtypages,cur_page.iterator().next().getLeftChild(),perm,null);
+		}
+
+		Iterator<BTreeEntry>iterator=cur_page.iterator();
+		BTreeEntry curBTreeEntry=iterator.next();
+		while(iterator.hasNext()){
+			if(curBTreeEntry.getKey().compare(Op.GREATER_THAN_OR_EQ,f)){
+				return findLeafPage(tid,dirtypages,curBTreeEntry.getLeftChild(),perm,f );
+			}
+
+			curBTreeEntry=iterator.next();
+		}
+		if(curBTreeEntry.getKey().compare(Op.GREATER_THAN_OR_EQ,f))
+			return findLeafPage(tid,dirtypages,curBTreeEntry.getLeftChild(),perm,f);
+		//不在左边，只能在最后一个BTreeEntry的右子结点上
+		return  findLeafPage(tid,dirtypages,curBTreeEntry.getRightChild(),perm,f);
+
+        //return null;
 	}
 	
 	/**
