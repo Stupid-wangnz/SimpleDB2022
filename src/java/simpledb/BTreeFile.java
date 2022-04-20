@@ -272,7 +272,50 @@ public class BTreeFile implements DbFile {
 		// the new entry.  getParentWithEmtpySlots() will be useful here.  Don't forget to update
 		// the sibling pointers of all the affected leaf pages.  Return the page into which a 
 		// tuple with the given key field should be inserted.
-        return null;
+
+		BTreeLeafPage left_Page=(BTreeLeafPage)getEmptyPage(tid,dirtypages,BTreePageId.LEAF);
+		Iterator<Tuple>tupleIterator=page.iterator();
+
+		int tupleNum=page.getNumTuples();
+		int count=0;
+		while(count<tupleNum/2){
+			Tuple tuple=tupleIterator.next();
+			page.deleteTuple(tuple);
+			//insertTuple已经实现Record的定义
+			//tuple.setRecordId(new RecordId(right_Page.getId(),count++));
+			left_Page.insertTuple(tuple);
+			count++;
+		}
+
+		//接下来将叶节点连接起来
+		if(page.getLeftSiblingId()==null){
+			//page is the most left page
+
+			left_Page.setRightSiblingId(page.getId());
+			page.setLeftSiblingId(left_Page.getId());
+		}
+		else{
+			((BTreeLeafPage)getPage(tid,dirtypages,page.getLeftSiblingId(),Permissions.READ_WRITE)).setRightSiblingId(left_Page.getId());
+
+			left_Page.setLeftSiblingId(page.getLeftSiblingId());
+			left_Page.setRightSiblingId(page.getId());
+
+			page.setLeftSiblingId(left_Page.getId());
+		}
+
+		//此时Iterator迭代下一个tuple刚好是需要被提上去的tuple
+		Field copy_Field=page.iterator().next().getField(keyField);
+		BTreeEntry new_BtreeEntry=new BTreeEntry(copy_Field,left_Page.getId(),page.getId());
+		BTreeInternalPage father_Page=getParentWithEmptySlots(tid,dirtypages,page.getParentId(),copy_Field);
+		father_Page.insertEntry(new_BtreeEntry);
+		updateParentPointers(tid,dirtypages,father_Page);
+		/*if(father_Page.getNumEmptySlots()==0)
+			splitInternalPage(tid,dirtypages,father_Page,copy_Field);*/
+
+		//被提上去的field如果大于等于插入的field，说明在左节点，否则在右节点
+		if(copy_Field.compare(Op.GREATER_THAN_OR_EQ,field))
+			return left_Page;
+        return page;
 		
 	}
 	
@@ -310,7 +353,35 @@ public class BTreeFile implements DbFile {
 		// the parent pointers of all the children moving to the new page.  updateParentPointers()
 		// will be useful here.  Return the page into which an entry with the given key field
 		// should be inserted.
-		return null;
+
+		BTreeInternalPage left_Page=(BTreeInternalPage)getEmptyPage(tid,dirtypages,BTreePageId.INTERNAL);
+		Iterator<BTreeEntry> bTreeEntryIterator=page.iterator();
+		int entryNum=page.getNumEntries();
+		int count=0;
+		while(count<entryNum/2){
+			BTreeEntry bTreeEntry=bTreeEntryIterator.next();
+			page.deleteKeyAndLeftChild(bTreeEntry);
+			left_Page.insertEntry(bTreeEntry);
+			count++;
+		}
+		//需要被提上去的key
+
+		BTreeEntry up_bTreeEntry=bTreeEntryIterator.next();
+		Field up_Field=up_bTreeEntry.getKey();
+
+		page.deleteKeyAndLeftChild(up_bTreeEntry);
+		up_bTreeEntry.setLeftChild(left_Page.getId());
+		up_bTreeEntry.setRightChild(page.getId());
+
+		updateParentPointers(tid,dirtypages,left_Page);
+		BTreeInternalPage father_Page=getParentWithEmptySlots(tid,dirtypages,page.getParentId(),up_Field);
+		father_Page.insertEntry(up_bTreeEntry);
+		updateParentPointers(tid,dirtypages,father_Page);
+
+		if(up_Field.compare(Op.GREATER_THAN_OR_EQ,field))
+			return left_Page;
+
+		return page;
 	}
 	
 	/**
