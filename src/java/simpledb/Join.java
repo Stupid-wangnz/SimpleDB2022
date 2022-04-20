@@ -124,8 +124,8 @@ public class Join extends Operator {
                     Tuple res_t = new Tuple(this.getTupleDesc());
                     for (int i = 0; i < t1.getTupleDesc().numFields(); i++)
                         res_t.setField(i, t1.getField(i));
-                    for (int i = t1.t1.getTupleDesc().numFields(); i < t1.t1.getTupleDesc().numFields() + t2.t1.getTupleDesc().numFields(); i++)
-                        res_t.setField(i, t2.getField(i - t1.t1.getTupleDesc().numFields()));
+                    for (int i = t1.getTupleDesc().numFields(); i < t1.getTupleDesc().numFields() + t2.getTupleDesc().numFields(); i++)
+                        res_t.setField(i, t2.getField(i - t1.getTupleDesc().numFields()));
 
                     return res_t;
                 }
