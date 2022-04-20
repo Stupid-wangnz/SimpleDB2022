@@ -31,9 +31,9 @@ public class JoinPredicate implements Serializable {
         this.fieldIndex2=field2;
         this.op=op;
     }
-    int fieldIndex1;
-    int fieldIndex2;
-    Predicate.Op op;
+    private int fieldIndex1;
+    private int fieldIndex2;
+    private Predicate.Op op;
     /**
      * Apply the predicate to the two specified tuples. The comparison can be
      * made through Field's compare method.

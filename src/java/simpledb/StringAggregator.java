@@ -34,12 +34,12 @@ public class StringAggregator implements Aggregator {
         if (what != Op.COUNT)
             throw new IllegalArgumentException("StringAggregator only supports COUNT");
     }
-    int gbfield;
-    Type gbfieldtype;
-    int afield;
-    Op what;
-    HashMap<Field,Integer>hashMap;
-    String [] fieldNames;
+    private int gbfield;
+    private Type gbfieldtype;
+    private int afield;
+    private Op what;
+    private HashMap<Field,Integer>hashMap;
+    private String [] fieldNames;
 
     /**
      * Merge a new tuple into the aggregate, grouping as indicated in the constructor

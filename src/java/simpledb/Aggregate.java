@@ -48,13 +48,13 @@ public class Aggregate extends Operator {
 
 
     }
-    OpIterator child;
-    int afield;
-    int gfield;
-    Aggregator.Op aop;
-    Aggregator aggregator;
-    OpIterator iterator;
-    Type type;
+    private OpIterator child;
+    private int afield;
+    private int gfield;
+    private Aggregator.Op aop;
+    private Aggregator aggregator;
+    private OpIterator iterator;
+    private Type type;
     /**
      * @return If this aggregate is accompanied by a groupby, return the groupby
      *         field index in the <b>INPUT</b> tuples. If not, return

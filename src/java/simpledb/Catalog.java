@@ -37,8 +37,8 @@ public class Catalog {
         String name;
         String pkeyField;
     }
-    ArrayList<Table> tables;
-    ArrayList<Integer> tableIDs;
+    private ArrayList<Table> tables;
+    private ArrayList<Integer> tableIDs;
     /**
      * Add a new table to the catalog.
      * This table's contents are stored in the specified DbFile.

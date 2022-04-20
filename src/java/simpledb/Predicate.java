@@ -60,9 +60,9 @@ public class Predicate implements Serializable {
         this.op=op;
         this.operand=operand;
     }
-    int fieldNum;
-    Op op;
-    Field operand;
+    private int fieldNum;
+    private Op op;
+    private Field operand;
     /**
      * @return the field number
      */

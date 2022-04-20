@@ -19,8 +19,8 @@ public class RecordId implements Serializable {
      * @param tupleno
      *            the tuple number within the page.
      */
-    int tupleno;
-    PageId pid;
+    private int tupleno;
+    private PageId pid;
     public RecordId(PageId pid, int tupleno) {
         // some code goes here
         this.pid=pid;

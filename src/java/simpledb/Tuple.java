@@ -21,9 +21,9 @@ public class Tuple implements Serializable {
      *            the schema of this tuple. It must be a valid TupleDesc
      *            instance with at least one field.
      */
-    TupleDesc tupleDesc;
-    RecordId recordId;
-    ArrayList<Field> fields;
+    private TupleDesc tupleDesc;
+    private RecordId recordId;
+    private ArrayList<Field> fields;
     public Tuple(TupleDesc td) {
         // some code goes here
         this.tupleDesc =td;

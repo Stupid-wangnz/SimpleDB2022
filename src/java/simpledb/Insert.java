@@ -32,10 +32,10 @@ public class Insert extends Operator {
         called=false;
     }
 
-    TransactionId transactionId;
-    OpIterator childOpIterator;
-    int tableId;
-    boolean called;
+    private TransactionId transactionId;
+    private OpIterator childOpIterator;
+    private int tableId;
+    private boolean called;
 
     public TupleDesc getTupleDesc() {
         // some code goes here

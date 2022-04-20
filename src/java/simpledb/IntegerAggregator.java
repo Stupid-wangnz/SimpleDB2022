@@ -37,15 +37,15 @@ public class IntegerAggregator implements Aggregator {
 
         countHashMap=new HashMap<>();
     }
-    int gbfield;
-    Type gbfieldtype;
-    int afield;
-    Op what;
-    ArrayList<Integer>list;
-    HashMap<Field,Integer>hashMap;
+    private int gbfield;
+    private Type gbfieldtype;
+    private int afield;
+    private Op what;
+    private ArrayList<Integer>list;
+    private HashMap<Field,Integer>hashMap;
 
-    String[]fieldNames;
-    HashMap<Field, Integer[]>countHashMap;
+    private String[]fieldNames;
+    private HashMap<Field, Integer[]>countHashMap;
     /**
      * Merge a new tuple into the aggregate, grouping as indicated in the
      * constructor

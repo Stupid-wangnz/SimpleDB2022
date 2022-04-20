@@ -309,6 +309,8 @@ public class BTreeFile implements DbFile {
 		BTreeInternalPage father_Page=getParentWithEmptySlots(tid,dirtypages,page.getParentId(),copy_Field);
 		father_Page.insertEntry(new_BtreeEntry);
 		updateParentPointers(tid,dirtypages,father_Page);
+
+		//不需要我们自己显式的调用，getparentWithEmptySlots里已经将parentpage分裂
 		/*if(father_Page.getNumEmptySlots()==0)
 			splitInternalPage(tid,dirtypages,father_Page,copy_Field);*/
 

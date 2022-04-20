@@ -33,10 +33,10 @@ public class SeqScan implements OpIterator {
         this.tableId=tableid;
         this.tableAlias=tableAlias;
     }
-    TransactionId transactionId;
-    int tableId;
-    String tableAlias;
-    DbFileIterator dbFileIterator;
+    private TransactionId transactionId;
+    private int tableId;
+    private String tableAlias;
+    private DbFileIterator dbFileIterator;
     /**
      * @return
      *       return the table name of the table the operator scans. This should

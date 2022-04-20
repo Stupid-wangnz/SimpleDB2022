@@ -27,8 +27,8 @@ public class HeapFile implements DbFile {
         file=f;
         tupleDesc=td;
     }
-    File file;
-    TupleDesc tupleDesc;
+    private File file;
+    private TupleDesc tupleDesc;
     /**
      * Returns the File backing this HeapFile on disk.
      * 

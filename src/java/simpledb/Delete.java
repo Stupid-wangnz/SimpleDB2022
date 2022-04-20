@@ -26,10 +26,10 @@ public class Delete extends Operator {
         tupleDesc=new TupleDesc(new Type[]{Type.INT_TYPE},new String[]{"Deleted Records"});
         called=false;
     }
-    TransactionId transactionId;
-    OpIterator childOpIterator;
-    TupleDesc tupleDesc;
-    boolean called;
+    private TransactionId transactionId;
+    private OpIterator childOpIterator;
+    private TupleDesc tupleDesc;
+    private boolean called;
 
     public TupleDesc getTupleDesc() {
         // some code goes here

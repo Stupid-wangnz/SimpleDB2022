@@ -38,8 +38,8 @@ public class BufferPool {
         this.numPages=numPages;
         pageConcurrentHashMap=new ConcurrentHashMap<>(numPages);
     }
-    ConcurrentHashMap<Integer,Page> pageConcurrentHashMap;
-    int numPages;
+    private ConcurrentHashMap<Integer,Page> pageConcurrentHashMap;
+    private int numPages;
     public static int getPageSize() {
       return pageSize;
     }

@@ -23,8 +23,8 @@ public class Filter extends Operator {
         this.predicate=p;
         this.childOpIterator=child;
     }
-    Predicate predicate;
-    OpIterator childOpIterator;
+    private Predicate predicate;
+    private OpIterator childOpIterator;
     public Predicate getPredicate() {
         // some code goes here
         return predicate;

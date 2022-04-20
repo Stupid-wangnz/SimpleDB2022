@@ -27,9 +27,9 @@ public class Join extends Operator {
         opIterator2=child2;
         t1=null;
     }
-    JoinPredicate joinPredicate;
-    OpIterator opIterator1;
-    OpIterator opIterator2;
+    private JoinPredicate joinPredicate;
+    private OpIterator opIterator1;
+    private OpIterator opIterator2;
     public JoinPredicate getJoinPredicate() {
         // some code goes here
         return joinPredicate;
@@ -42,7 +42,7 @@ public class Join extends Operator {
      * */
     public String getJoinField1Name() {
         // some code goes here
-        return opIterator1.getTupleDesc().getFieldName(joinPredicate.fieldIndex1);
+        return opIterator1.getTupleDesc().getFieldName(joinPredicate.getField1());
     }
 
     /**
@@ -52,7 +52,7 @@ public class Join extends Operator {
      * */
     public String getJoinField2Name() {
         // some code goes here
-        return opIterator2.getTupleDesc().getFieldName(joinPredicate.fieldIndex2);
+        return opIterator2.getTupleDesc().getFieldName(joinPredicate.getField2());
     }
 
     /**
@@ -122,10 +122,10 @@ public class Join extends Operator {
                 Tuple t2 = opIterator2.next();
                 if (joinPredicate.filter(t1, t2)) {
                     Tuple res_t = new Tuple(this.getTupleDesc());
-                    for (int i = 0; i < t1.fields.size(); i++)
+                    for (int i = 0; i < t1.getTupleDesc().numFields(); i++)
                         res_t.setField(i, t1.getField(i));
-                    for (int i = t1.fields.size(); i < t1.fields.size() + t2.fields.size(); i++)
-                        res_t.setField(i, t2.getField(i - t1.fields.size()));
+                    for (int i = t1.t1.getTupleDesc().numFields(); i < t1.t1.getTupleDesc().numFields() + t2.t1.getTupleDesc().numFields(); i++)
+                        res_t.setField(i, t2.getField(i - t1.t1.getTupleDesc().numFields()));
 
                     return res_t;
                 }
