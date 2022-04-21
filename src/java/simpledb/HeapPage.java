@@ -22,8 +22,8 @@ public class HeapPage implements Page {
     byte[] oldData;
     private final Byte oldDataLock=new Byte((byte)0);
 
-    boolean dirty;
-    TransactionId transactionId;
+    private boolean dirty;
+    private TransactionId transactionId;
 
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
@@ -87,7 +87,6 @@ public class HeapPage implements Page {
         // some code goes here
 
         return numSlots/8+(numSlots%8==0?0:1);
-
                  
     }
     

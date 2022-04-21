@@ -10,7 +10,7 @@ public class HeapPageId implements PageId {
      * @param tableId The table that is being referenced
      * @param pgNo The page number in that table.
      */
-    int tableId,pgNo;
+    private int tableId,pgNo;
     public HeapPageId(int tableId, int pgNo) {
         // some code goes here
         this.tableId=tableId;

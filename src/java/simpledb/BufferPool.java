@@ -3,6 +3,7 @@ package simpledb;
 import java.io.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 
@@ -36,9 +37,9 @@ public class BufferPool {
     public BufferPool(int numPages) {
         // some code goes here
         this.numPages=numPages;
-        pageConcurrentHashMap=new ConcurrentHashMap<>(numPages);
+        pageHashMap=new ConcurrentHashMap<>(numPages);
     }
-    private ConcurrentHashMap<Integer,Page> pageConcurrentHashMap;
+    private ConcurrentHashMap<PageId,Page> pageHashMap;
     private int numPages;
     public static int getPageSize() {
       return pageSize;
@@ -72,16 +73,16 @@ public class BufferPool {
     public Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
-        if(pageConcurrentHashMap.size()>=numPages)
+        if(pageHashMap.size()>=numPages)
             evictPage();
 
-        if(!pageConcurrentHashMap.containsKey(pid.hashCode())){
+        if(!pageHashMap.containsKey(pid)){
             DbFile dbFile=Database.getCatalog().getDatabaseFile(pid.getTableId());
             Page page= dbFile.readPage(pid);
-            pageConcurrentHashMap.put(pid.hashCode(),page);
+            pageHashMap.put(pid,page);
         }
 
-        return pageConcurrentHashMap.get(pid.hashCode());
+        return pageHashMap.get(pid);
         //return null;
     }
 
@@ -152,7 +153,7 @@ public class BufferPool {
         ArrayList<Page>pages=dbFile.insertTuple(tid,t);
         for(int i=0;i<pages.size();i++){
             pages.get(i).markDirty(true,tid);
-            pageConcurrentHashMap.put(pages.get(i).getId().hashCode(),pages.get(i));
+            pageHashMap.put(pages.get(i).getId(),pages.get(i));
         }
 
         // not necessary for lab1
@@ -180,7 +181,7 @@ public class BufferPool {
         ArrayList<Page>pages=dbFile.deleteTuple(tid,t);
         for(int i=0;i<pages.size();i++){
             pages.get(i).markDirty(true,tid);
-            pageConcurrentHashMap.put(pages.get(i).getId().hashCode(),pages.get(i));
+            pageHashMap.put(pages.get(i).getId(),pages.get(i));
         }
         // not necessary for lab1
     }
@@ -194,7 +195,7 @@ public class BufferPool {
         // some code goes here
         // not necessary for lab1
 
-        for(Page page:pageConcurrentHashMap.values()){
+        for(Page page:pageHashMap.values()){
             if(page.isDirty()!=null){
                 flushPage(page.getId());
             }
@@ -215,7 +216,7 @@ public class BufferPool {
         // some code goes here
         // not necessary for lab1
 
-        pageConcurrentHashMap.remove(pid.hashCode());
+        pageHashMap.remove(pid.hashCode());
     }
 
     /**
@@ -226,7 +227,7 @@ public class BufferPool {
         // some code goes here
 
         int hash=pid.hashCode();
-        Page page=pageConcurrentHashMap.get(hash);
+        Page page=pageHashMap.get(hash);
         if(page.isDirty()==null)
             return;
 
@@ -252,7 +253,7 @@ public class BufferPool {
         // some code goes here
         // not necessary for lab1
         Page removedPage=null;
-        for(Page page:pageConcurrentHashMap.values()){
+        for(Page page:pageHashMap.values()){
             if(page.isDirty()==null){
                 removedPage=page;
                 break;
@@ -264,8 +265,6 @@ public class BufferPool {
 
 
         discardPage(removedPage.getId());
-
-
 
     }
 

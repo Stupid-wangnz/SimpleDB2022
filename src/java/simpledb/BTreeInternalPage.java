@@ -404,6 +404,7 @@ public class BTreeInternalPage extends BTreePage {
 	public void updateEntry(BTreeEntry e) throws DbException {
 		RecordId rid = e.getRecordId();
 		if(rid == null)
+
 			throw new DbException("tried to update entry with null rid");
 		if((rid.getPageId().getPageNumber() != pid.getPageNumber()) || (rid.getPageId().getTableId() != pid.getTableId()))
 			throw new DbException("tried to update entry on invalid page or table");
