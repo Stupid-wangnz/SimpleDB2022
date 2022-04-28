@@ -34,7 +34,7 @@ public class TupleDesc implements Serializable {
             return fieldName + "(" + fieldType + ")";
         }
     }
-    private ArrayList<TDItem> tdItems;
+
 
     /**
      * @return
@@ -73,7 +73,7 @@ public class TupleDesc implements Serializable {
         }
         // some code goes here
     }
-
+    private ArrayList<TDItem> tdItems;
     /**
      * Constructor. Create a new tuple desc with typeAr.length fields with
      * fields of the specified types, with anonymous (unnamed) fields.

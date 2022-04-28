@@ -73,6 +73,7 @@ public class BufferPool {
     public Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
+
         if(pageHashMap.size()>=numPages)
             evictPage();
 
@@ -216,7 +217,7 @@ public class BufferPool {
         // some code goes here
         // not necessary for lab1
 
-        pageHashMap.remove(pid.hashCode());
+        pageHashMap.remove(pid);
     }
 
     /**
@@ -262,10 +263,7 @@ public class BufferPool {
 
         if(removedPage==null)
             throw new DbException("all dirty page");
-
-
         discardPage(removedPage.getId());
-
     }
 
 }
