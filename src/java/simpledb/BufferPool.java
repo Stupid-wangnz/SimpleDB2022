@@ -39,6 +39,8 @@ public class BufferPool {
         this.numPages=numPages;
         pageHashMap=new ConcurrentHashMap<>(numPages);
     }
+
+
     private ConcurrentHashMap<PageId,Page> pageHashMap;
     private int numPages;
     public static int getPageSize() {
@@ -227,8 +229,8 @@ public class BufferPool {
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
 
-        int hash=pid.hashCode();
-        Page page=pageHashMap.get(hash);
+
+        Page page=pageHashMap.get(pid);
         if(page.isDirty()==null)
             return;
 

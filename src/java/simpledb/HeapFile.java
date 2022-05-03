@@ -97,7 +97,6 @@ public class HeapFile implements DbFile {
         int st=pageno*BufferPool.getPageSize();
         randomAccessFile.seek(st);
         randomAccessFile.write(page.getPageData());
-
         // not necessary for lab1
     }
 
@@ -159,9 +158,9 @@ public class HeapFile implements DbFile {
     public DbFileIterator iterator(TransactionId tid) {
         // some code goes here
 
-        return new HeapFileIterator(this,tid);
+        return new HeapFileIterator(this, tid);
     }
-    public static  class HeapFileIterator implements DbFileIterator{
+    public static class HeapFileIterator implements DbFileIterator{
 
         HeapFile heapFile;
         TransactionId transactionId;

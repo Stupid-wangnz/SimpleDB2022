@@ -132,12 +132,10 @@ public class Tuple implements Serializable {
 
         return true;
     }
-
     @Override
     public int hashCode() {
         return Objects.hash(getTupleDesc(), fields);
     }
-
     /**
      * reset the TupleDesc of this tuple (only affecting the TupleDesc)
      * */
@@ -149,6 +147,5 @@ public class Tuple implements Serializable {
         /*fields=new ArrayList<>(td.numFields());
         for(int i=0;i< td.numFields();i++)
             fields.add(null);*/
-
     }
 }

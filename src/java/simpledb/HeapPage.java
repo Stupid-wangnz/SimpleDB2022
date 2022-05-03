@@ -257,13 +257,11 @@ public class HeapPage implements Page {
         int tupleno=t.getRecordId().getTupleNumber();
 
         if(!isSlotUsed(tupleno)) throw new DbException("delete fail");
-        if(!tuples[tupleno].equals(t)) {throw new DbException("delete fail");}
         if(tuples[tupleno]==null) throw new DbException("delete fail");
-
+        if(!tuples[tupleno].equals(t)) {throw new DbException("delete fail");}
 
         this.markSlotUsed(tupleno,false);
         tuples[tupleno]=null;
-        return;
 
     }
 

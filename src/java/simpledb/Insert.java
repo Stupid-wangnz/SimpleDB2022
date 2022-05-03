@@ -82,8 +82,6 @@ public class Insert extends Operator {
         called=true;
 
         int count=0;
-
-
         while (childOpIterator.hasNext()) {
             Tuple t=childOpIterator.next();
             try {

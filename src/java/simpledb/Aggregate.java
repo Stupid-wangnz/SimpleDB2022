@@ -130,7 +130,7 @@ public class Aggregate extends Operator {
         }
         iterator=aggregator.iterator();
         iterator.open();
-
+        child.close();
     }
 
     /**
@@ -184,7 +184,8 @@ public class Aggregate extends Operator {
 
     public void close() {
 	// some code goes here
-        child.close();
+        //child.close();
+        super.close();
         iterator.close();
     }
 

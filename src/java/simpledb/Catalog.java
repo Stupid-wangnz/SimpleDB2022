@@ -27,6 +27,7 @@ public class Catalog {
         tables=new ArrayList<>();
         tableIDs=new ArrayList<>();
     }
+    //辅助类
     class Table{
         Table(DbFile dbFile,String name,String pkeyField){
             this.dbFile=dbFile;

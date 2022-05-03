@@ -106,7 +106,6 @@ public class IntegerAggregator implements Aggregator {
                     arr[0]=value;
                     arr[1]=1;
                     countHashMap.put(gbField,arr);
-
                     hashMap.put(gbField,value);
                 }
                 else {
@@ -130,7 +129,7 @@ public class IntegerAggregator implements Aggregator {
      */
     public OpIterator iterator() {
         // some code goes here
-            return new IntegerAggregatorIterator();
+            return new IntegerAggregatorIterator(hashMap);
     }
 
     //实现IntegerAggregatorIterator
@@ -140,21 +139,25 @@ public class IntegerAggregator implements Aggregator {
         private Iterator<Tuple> iterator;
         private TupleDesc tupleDesc;
         private ArrayList<Tuple> TupleList;
-        public IntegerAggregatorIterator(){
-            hashMap=IntegerAggregator.this.hashMap;
+        public IntegerAggregatorIterator(HashMap<Field,Integer>hashMap){
+            this.hashMap=hashMap;
             Type[] type=new Type[2];
+
             type[0]=gbfieldtype;
             type[1]=Type.INT_TYPE;
+
             String[] fieldName=new String[2];
             if(gbfield!=NO_GROUPING)
                 fieldName[0]=fieldNames[0];
             fieldName[1]=fieldNames[1];
+
             if(gbfield==NO_GROUPING)
                 tupleDesc=new TupleDesc(new Type[]{type[1]},new String[]{fieldNames[1]});
             else
                 tupleDesc=new TupleDesc(type,fieldName);
+
             TupleList=new ArrayList<>();
-            for(Field field:hashMap.keySet()){
+            for(Field field:this.hashMap.keySet()){
                 Tuple tuple=new Tuple(tupleDesc);
 
                 if(gbfield!=NO_GROUPING) {
