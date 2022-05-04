@@ -100,7 +100,7 @@ public class Tuple implements Serializable {
         {
             str+=fields.get(i).toString();
             if(i!=fields.size()-1)
-                str+="\t";
+                str+=" ";
         }
 
         return str;

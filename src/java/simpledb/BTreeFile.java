@@ -350,7 +350,7 @@ public class BTreeFile implements DbFile {
         // Split the internal page by adding a new page on the right of the existing
 		// page and moving half of the entries to the new page.  Push the middle key up
 		// into the parent page, and recursively split the parent as needed to accommodate
-		// the new entry.  getParentWithEmtpySlots() will be useful here.  Don't forget to update
+		// the new entry.  getParentWithEmtpySlot	s() will be useful here.  Don't forget to update
 		// the parent pointers of all the children moving to the new page.  updateParentPointers()
 		// will be useful here.  Return the page into which an entry with the given key field
 		// should be inserted.
@@ -702,7 +702,7 @@ public class BTreeFile implements DbFile {
 
 		if(isRightSibling)
 			to_move_Tuple=tupleIterator.next();
-			entry.setKey(to_move_Tuple.getField(keyField));
+		entry.setKey(to_move_Tuple.getField(keyField));
 		//entry.setKey(newField);
 		parent.updateEntry(entry);
 	}
