@@ -54,10 +54,10 @@ public class BTreeReverseScanTest extends SimpleDbTestBase {
 
         public int compare(ArrayList<Integer> t1, ArrayList<Integer> t2) {
             int cmp = 0;
-            if(t1.get(keyField) > t2.get(keyField)) {
+            if(t1.get(keyField) < t2.get(keyField)) {
                 cmp = -1;
             }
-            else if(t1.get(keyField) < t2.get(keyField)) {
+            else if(t1.get(keyField) > t2.get(keyField)) {
                 cmp = 1;
             }
             return cmp;
@@ -96,6 +96,15 @@ public class BTreeReverseScanTest extends SimpleDbTestBase {
 
         TransactionId tid = new TransactionId();
         BTreeReverseScan scan = new BTreeReverseScan(tid, f.getId(), "table", null);
+        Collections.reverse(tuples);
+        /*scan.open();
+        for (int i = 0; i < 100; ++i) {
+            assertTrue(scan.hasNext());
+            Tuple t = scan.next();
+            System.out.println(t+" "+tuples.get(i));
+        }
+        scan.close();*/
+
         scan.open();
         for (int i = 0; i < 100; ++i) {
             assertTrue(scan.hasNext());
@@ -159,7 +168,7 @@ public class BTreeReverseScanTest extends SimpleDbTestBase {
                 tuplesFiltered.add(tup);
             }
         }
-
+        Collections.reverse(tuplesFiltered);
         scan = new BTreeReverseScan(tid, f.getId(), "table", ipred);
         scan.open();
         for (int i = 0; i < tuplesFiltered.size(); ++i) {
@@ -186,7 +195,7 @@ public class BTreeReverseScanTest extends SimpleDbTestBase {
                 tuplesFiltered.add(tup);
             }
         }
-
+        Collections.reverse(tuplesFiltered);
         scan = new BTreeReverseScan(tid, f.getId(), "table", ipred);
         scan.open();
         for (int i = 0; i < tuplesFiltered.size(); ++i) {
