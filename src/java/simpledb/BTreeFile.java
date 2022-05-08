@@ -1525,7 +1525,7 @@ class BTreeFileReverseIterator extends AbstractDbFileIterator {
 		BTreeRootPtrPage rootPtr = (BTreeRootPtrPage) Database.getBufferPool().getPage(
 				tid, BTreeRootPtrPage.getId(f.getId()), Permissions.READ_ONLY);
 		BTreePageId root = rootPtr.getRootId();
-
+		//找到最后一个叶子节点
 		curp = f.findRightLeafPage(tid, root, Permissions.READ_ONLY, null);
 		it = curp.reverseIterator();
 	}
@@ -1542,6 +1542,7 @@ class BTreeFileReverseIterator extends AbstractDbFileIterator {
 			it = null;
 
 		while (it == null && curp != null) {
+			//当前页结束了，找左兄弟结点，如果没有，则返回null
 			BTreePageId nextp = curp.getLeftSiblingId();
 			if(nextp == null) {
 				curp = null;
@@ -1611,10 +1612,14 @@ class BTreeSearchReverseIterator extends AbstractDbFileIterator {
 		BTreeRootPtrPage rootPtr = (BTreeRootPtrPage) Database.getBufferPool().getPage(
 				tid, BTreeRootPtrPage.getId(f.getId()), Permissions.READ_ONLY);
 		BTreePageId root = rootPtr.getRootId();
+
+		//判断小于等于的情况则找到ipred对应的叶子节点，从它往前找
 		if(ipred.getOp() == Op.EQUALS || ipred.getOp() == Op.LESS_THAN
 				|| ipred.getOp() == Op.LESS_THAN_OR_EQ) {
 			curp = f.findLeafPage(tid, root, Permissions.READ_ONLY, ipred.getField());
 		}
+
+		//判断大于等于的情况则找到最大的叶子节点，从它往前找
 		else {
 			curp = f.findRightLeafPage(tid, root, Permissions.READ_ONLY, null);
 		}
@@ -1631,7 +1636,10 @@ class BTreeSearchReverseIterator extends AbstractDbFileIterator {
 	protected Tuple readNext() throws TransactionAbortedException, DbException,
 			NoSuchElementException {
 		while (it != null) {
-
+			/*如果当前页有满足条件的tuple，则返回第一个tuple
+			如果下一个tuple不满足了，且比较的是大于等于的情况，已经找到了最大的tuple，则返回null
+			如果下一个tuple不满足了，且比较的是等于的情况，而当前tuple已经小于ipred了，说明不存在，则返回null
+			 */
 			while (it.hasNext()) {
 				Tuple t = it.next();
 				if (t.getField(f.keyField()).compare(ipred.getOp(), ipred.getField())) {
@@ -1649,7 +1657,7 @@ class BTreeSearchReverseIterator extends AbstractDbFileIterator {
 					return null;
 				}
 			}
-
+			//当前页访问完tuple了，则查找下一个左兄弟页
 			BTreePageId nextp = curp.getLeftSiblingId();
 			// if there are no more pages to the right, end the iteration
 			if(nextp == null) {
