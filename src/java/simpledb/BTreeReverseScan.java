@@ -133,7 +133,6 @@ public class BTreeReverseScan implements OpIterator{
             TransactionAbortedException {
         close();
         open();
-        it.rewind();
     }
 
     @Override
