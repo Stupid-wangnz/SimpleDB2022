@@ -70,25 +70,27 @@ public class BufferPool {
         }
     }
 
-    private class PageLockManager{
-        ConcurrentHashMap<PageId,ArrayList<PageLock>> pageLocks;
-        public PageLockManager(){
-            pageLocks=new ConcurrentHashMap<>();
+    private class PageLockManager {
+        ConcurrentHashMap<PageId, ArrayList<PageLock>> pageLocks;
+
+        public PageLockManager() {
+            pageLocks = new ConcurrentHashMap<>();
         }
 
-        public synchronized void addPageLock(PageId pid, PageLock pl){
-            if(pageLocks.containsKey(pid)){
+        public synchronized void addPageLock(PageId pid, PageLock pl) {
+            if (pageLocks.containsKey(pid)) {
                 pageLocks.get(pid).add(pl);
-            }else{
-                ArrayList<PageLock> pls=new ArrayList<>();
+            } else {
+                ArrayList<PageLock> pls = new ArrayList<>();
                 pls.add(pl);
                 pageLocks.put(pid, pls);
             }
         }
+
         //tid在申请读取pid之前判断，是否能够申请锁
-        public synchronized boolean requireLock(PageId pid, TransactionId tid, int lockType){
+        public synchronized boolean requireLock(PageId pid, TransactionId tid, int lockType) {
             //申请读取pid，如果pid上有其他事务的写锁，则返回false
-            if(!pageLocks.containsKey(pid)){
+            if (!pageLocks.containsKey(pid)) {
                 //no locks on this page,put new lock on it and return true
                 addPageLock(pid, new PageLock(tid, lockType));
                 return true;
@@ -96,32 +98,32 @@ public class BufferPool {
             /*
             如果pageLocks中已经有了这个pid，那么就要判断这个pid已经被哪些锁锁住了
              */
-            ArrayList<PageLock> locks=pageLocks.get(pid);
+            ArrayList<PageLock> locks = pageLocks.get(pid);
 
-            for(PageLock lock:locks){
-                if(lock.tid.equals(tid)){
+            for (PageLock lock : locks) {
+                if (lock.tid.equals(tid)) {
                     //如果这个锁是自己的
-                    if(lock.lockType==lockType){
+                    if (lock.lockType == lockType) {
                         //如果这个锁是自己的，并且是想要的锁类型，那么返回true
                         return true;
                     }
-                    if(lock.lockType==1){
+                    if (lock.lockType == 1) {
                         //如果已经有了写锁，那么返回true
                         return true;
                     }
                     //如果已有的锁是读锁，require的是写锁，且pid上只有一把锁，那么将这个锁改为写锁
-                    if(locks.size()==1){
-                        lock.lockType=1;
+                    if (locks.size() == 1) {
+                        lock.lockType = 1;
                         return true;
                     }
                 }
             }
             //如果没有找到自己的锁，pid上的锁是不是其他事务的写锁，如果是，那么返回false
-            if(locks.get(0).lockType==1){
+            if (locks.get(0).lockType == 1) {
                 return false;
             }
             //剩下的情况是pid上的锁是其他事务的读锁，那如果是想要的读锁，那么返回true
-            if(lockType==0){
+            if (lockType == 0) {
                 addPageLock(pid, new PageLock(tid, lockType));
                 return true;
             }
@@ -129,14 +131,14 @@ public class BufferPool {
             return false;
         }
 
-        public synchronized void releaseLock(PageId pid, TransactionId tid){
+        public synchronized void releaseLock(PageId pid, TransactionId tid) {
             //release the lock by tid on pid
-            if(pageLocks.containsKey(pid)){
-                ArrayList<PageLock> locks=pageLocks.get(pid);
-                for(PageLock lock:locks){
-                    if(lock.tid.equals(tid)){
+            if (pageLocks.containsKey(pid)) {
+                ArrayList<PageLock> locks = pageLocks.get(pid);
+                for (PageLock lock : locks) {
+                    if (lock.tid.equals(tid)) {
                         locks.remove(lock);
-                        if(locks.size()==0){
+                        if (locks.size() == 0) {
                             pageLocks.remove(pid);
                         }
                         return;
@@ -145,8 +147,21 @@ public class BufferPool {
             }
         }
 
-    }
+        public synchronized boolean holdsLock(PageId pid, TransactionId tid) {
+            //check if tid holds the lock on pid
+            if (pageLocks.containsKey(pid)) {
+                ArrayList<PageLock> locks = pageLocks.get(pid);
+                for (PageLock lock : locks) {
+                    if (lock.tid.equals(tid)) {
+                        return true;
+                    }
+                }
 
+            }
+            return false;
+
+        }
+    }
     /**
      * Retrieve the specified page with the associated permissions.
      * Will acquire a lock and may block if that lock is held by another
@@ -175,7 +190,8 @@ public class BufferPool {
         while (!canGetLock){
             //如果tid没有获得pid的锁，那么就要等待
             try {
-                wait();
+                //wait();
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -219,13 +235,17 @@ public class BufferPool {
     public void transactionComplete(TransactionId tid) throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
+
+        transactionComplete(tid, true);
     }
 
     /** Return true if the specified transaction has a lock on the specified page */
     public boolean holdsLock(TransactionId tid, PageId p) {
         // some code goes here
         // not necessary for lab1|lab2
-        return false;
+
+        return pageLockManager.holdsLock(p, tid);
+        //return false;
     }
 
     /**
@@ -239,7 +259,18 @@ public class BufferPool {
         throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
+
+        if(commit){
+            flushPages(tid);
+        }
+
+        for(PageId pid:pageHashMap.keySet()){
+            if(pageLockManager.holdsLock(pid, tid)){
+                pageLockManager.releaseLock(pid, tid);
+            }
+        }
     }
+
 
     /**
      * Add a tuple to the specified table on behalf of transaction tid.  Will
@@ -336,8 +367,6 @@ public class BufferPool {
      */
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
-
-
         Page page=pageHashMap.get(pid);
         if(page.isDirty()==null)
             return;
@@ -354,6 +383,12 @@ public class BufferPool {
     public synchronized  void flushPages(TransactionId tid) throws IOException {
         // some code goes here
         // not necessary for lab1|lab2
+
+        for(Page page:pageHashMap.values()){
+            if(page.isDirty()!=null&&page.isDirty().equals(tid)){
+                flushPage(page.getId());
+            }
+        }
     }
 
     /**
@@ -375,5 +410,5 @@ public class BufferPool {
             throw new DbException("all dirty page");
         discardPage(removedPage.getId());
     }
-
 }
+
