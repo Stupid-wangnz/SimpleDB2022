@@ -38,11 +38,15 @@ public class BufferPool {
         // some code goes here
         this.numPages=numPages;
         pageHashMap=new ConcurrentHashMap<>(numPages);
+
+        pageLockManager=new PageLockManager();
     }
 
 
     private ConcurrentHashMap<PageId,Page> pageHashMap;
     private int numPages;
+    PageLockManager pageLockManager;
+
     public static int getPageSize() {
       return pageSize;
     }
@@ -55,6 +59,92 @@ public class BufferPool {
     // THIS FUNCTION SHOULD ONLY BE USED FOR TESTING!!
     public static void resetPageSize() {
     	BufferPool.pageSize = DEFAULT_PAGE_SIZE;
+    }
+
+    private class PageLock{
+        TransactionId tid;
+        int lockType;//0 is shared lock, 1 is exclusive lock
+        public PageLock(TransactionId tid, int lockType){
+            this.tid=tid;
+            this.lockType=lockType;
+        }
+    }
+
+    private class PageLockManager{
+        ConcurrentHashMap<PageId,ArrayList<PageLock>> pageLocks;
+        public PageLockManager(){
+            pageLocks=new ConcurrentHashMap<>();
+        }
+
+        public synchronized void addPageLock(PageId pid, PageLock pl){
+            if(pageLocks.containsKey(pid)){
+                pageLocks.get(pid).add(pl);
+            }else{
+                ArrayList<PageLock> pls=new ArrayList<>();
+                pls.add(pl);
+                pageLocks.put(pid, pls);
+            }
+        }
+        //tid在申请读取pid之前判断，是否能够申请锁
+        public synchronized boolean requireLock(PageId pid, TransactionId tid, int lockType){
+            //申请读取pid，如果pid上有其他事务的写锁，则返回false
+            if(!pageLocks.containsKey(pid)){
+                //no locks on this page,put new lock on it and return true
+                addPageLock(pid, new PageLock(tid, lockType));
+                return true;
+            }
+            /*
+            如果pageLocks中已经有了这个pid，那么就要判断这个pid已经被哪些锁锁住了
+             */
+            ArrayList<PageLock> locks=pageLocks.get(pid);
+
+            for(PageLock lock:locks){
+                if(lock.tid.equals(tid)){
+                    //如果这个锁是自己的
+                    if(lock.lockType==lockType){
+                        //如果这个锁是自己的，并且是想要的锁类型，那么返回true
+                        return true;
+                    }
+                    if(lock.lockType==1){
+                        //如果已经有了写锁，那么返回true
+                        return true;
+                    }
+                    //如果已有的锁是读锁，require的是写锁，且pid上只有一把锁，那么将这个锁改为写锁
+                    if(locks.size()==1){
+                        lock.lockType=1;
+                        return true;
+                    }
+                }
+            }
+            //如果没有找到自己的锁，pid上的锁是不是其他事务的写锁，如果是，那么返回false
+            if(locks.get(0).lockType==1){
+                return false;
+            }
+            //剩下的情况是pid上的锁是其他事务的读锁，那如果是想要的读锁，那么返回true
+            if(lockType==0){
+                addPageLock(pid, new PageLock(tid, lockType));
+                return true;
+            }
+
+            return false;
+        }
+
+        public synchronized void releaseLock(PageId pid, TransactionId tid){
+            //release the lock by tid on pid
+            if(pageLocks.containsKey(pid)){
+                ArrayList<PageLock> locks=pageLocks.get(pid);
+                for(PageLock lock:locks){
+                    if(lock.tid.equals(tid)){
+                        locks.remove(lock);
+                        if(locks.size()==0){
+                            pageLocks.remove(pid);
+                        }
+                        return;
+                    }
+                }
+            }
+        }
+
     }
 
     /**
@@ -75,6 +165,22 @@ public class BufferPool {
     public Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
+
+        //tid在访问pid时锁的类型
+        int lockType=perm==Permissions.READ_ONLY?0:1;
+
+        //如果tid已经获得了pid的锁，那么直接返回
+        boolean canGetLock=pageLockManager.requireLock(pid, tid, lockType);
+
+        while (!canGetLock){
+            //如果tid没有获得pid的锁，那么就要等待
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            canGetLock=pageLockManager.requireLock(pid, tid, lockType);
+        }
 
         if(pageHashMap.size()>=numPages)
             evictPage();
@@ -101,6 +207,8 @@ public class BufferPool {
     public void releasePage(TransactionId tid, PageId pid) {
         // some code goes here
         // not necessary for lab1|lab2
+
+        pageLockManager.releaseLock(pid, tid);
     }
 
     /**
