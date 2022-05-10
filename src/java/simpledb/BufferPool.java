@@ -3,9 +3,7 @@ package simpledb;
 import java.io.*;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -88,7 +86,7 @@ public class BufferPool {
         }
 
         //tid在申请读取pid之前判断，是否能够申请锁
-        public synchronized boolean requireLock(PageId pid, TransactionId tid, int lockType) {
+        public synchronized boolean acquireLock(PageId pid, TransactionId tid, int lockType) {
             //申请读取pid，如果pid上有其他事务的写锁，则返回false
             if (!pageLocks.containsKey(pid)) {
                 //no locks on this page,put new lock on it and return true
@@ -185,7 +183,7 @@ public class BufferPool {
         int lockType=perm==Permissions.READ_ONLY?0:1;
 
         //如果tid已经获得了pid的锁，那么直接返回
-        boolean canGetLock=pageLockManager.requireLock(pid, tid, lockType);
+        boolean canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
 
         while (!canGetLock){
             //如果tid没有获得pid的锁，那么就要等待
@@ -195,7 +193,7 @@ public class BufferPool {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            canGetLock=pageLockManager.requireLock(pid, tid, lockType);
+            canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
         }
 
         if(pageHashMap.size()>=numPages)
