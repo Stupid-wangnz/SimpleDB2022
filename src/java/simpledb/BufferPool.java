@@ -184,9 +184,18 @@ public class BufferPool {
 
         //如果tid已经获得了pid的锁，那么直接返回
         boolean canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
+        long startTime=System.currentTimeMillis();
 
+
+        /*
+        超时策略判断死锁
+         */
         while (!canGetLock){
             //如果tid没有获得pid的锁，那么就要等待
+
+            if(System.currentTimeMillis()-startTime>=1500){
+                throw new TransactionAbortedException();
+            }
             try {
                 //wait();
                 Thread.sleep(100);
@@ -261,6 +270,9 @@ public class BufferPool {
         if(commit){
             flushPages(tid);
         }
+        else{
+            rollbackPages(tid);
+        }
 
         for(PageId pid:pageHashMap.keySet()){
             if(pageLockManager.holdsLock(pid, tid)){
@@ -269,6 +281,17 @@ public class BufferPool {
         }
     }
 
+
+    private synchronized void rollbackPages(TransactionId tid) throws IOException {
+        //事务tid中断，回滚tid中的所有页面
+        for(PageId pid:pageHashMap.keySet()){
+            if(pageLockManager.holdsLock(pid, tid)){
+                DbFile dbFile=Database.getCatalog().getDatabaseFile(pid.getTableId());
+                Page page=dbFile.readPage(pid);
+                pageHashMap.replace(pid,page);
+            }
+        }
+    }
 
     /**
      * Add a tuple to the specified table on behalf of transaction tid.  Will
