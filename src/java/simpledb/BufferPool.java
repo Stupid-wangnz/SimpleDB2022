@@ -3,7 +3,9 @@ package simpledb;
 import java.io.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
 
 /**
  * BufferPool manages the reading and writing of pages into memory from
@@ -70,9 +72,15 @@ public class BufferPool {
 
     private class PageLockManager {
         ConcurrentHashMap<PageId, ArrayList<PageLock>> pageLocks;
+        /*依赖图，用来判断是否有环出现死锁
+        依赖图的逻辑:每个结点就是hashmap里的key，对应的value是key指向的其他结点的集合
+        ...单向边的集合可以理解为
+         */
+        ConcurrentHashMap<TransactionId, ArrayList<TransactionId>> dependencyMap;
 
         public PageLockManager() {
             pageLocks = new ConcurrentHashMap<>();
+            dependencyMap = new ConcurrentHashMap<>();
         }
 
         public synchronized void addPageLock(PageId pid, PageLock pl) {
@@ -83,7 +91,63 @@ public class BufferPool {
                 pls.add(pl);
                 pageLocks.put(pid, pls);
             }
+            removeDependency(pl.tid);
         }
+
+        public synchronized void addDependency(TransactionId tid1, TransactionId tid2) {
+            if (dependencyMap.containsKey(tid1)) {
+                dependencyMap.get(tid1).add(tid2);
+            } else {
+                ArrayList<TransactionId> tids = new ArrayList<>();
+                tids.add(tid2);
+                dependencyMap.put(tid1, tids);
+            }
+        }
+
+        public synchronized void removeDependency(TransactionId tid) {
+            dependencyMap.remove(tid);
+        }
+
+        public synchronized boolean hasCycle(TransactionId tid) {
+            //判断dependencyMap是否有环
+            //如果有回路，则返回true
+            //如果没有回路，则返回false
+
+            ArrayList<TransactionId> tids = dependencyMap.get(tid);
+            if (tids == null) {
+                return false;
+            }
+            //来判断是否有环
+            //如果有环，则返回true
+            //如果没有环，则返回false
+            //dfs判断是否有环
+            HashSet<TransactionId>visited=new HashSet<>();
+            HashSet<TransactionId>visiting=new HashSet<>();
+            return dfs(tid,visited,visiting);
+        }
+
+        private synchronized boolean dfs(TransactionId tid,HashSet<TransactionId>visited,HashSet<TransactionId>visiting) {
+            visiting.add(tid);
+            ArrayList<TransactionId> tids = dependencyMap.get(tid);
+            if(tids==null) {
+                visiting.remove(tid);
+                visited.add(tid);
+                return false;
+            }
+            for(TransactionId ntid:tids){
+                if(visiting.contains(ntid))
+                    return true;
+                if(visited.contains(ntid))
+                    continue;
+
+                if(dfs(ntid,visited,visiting))
+                    return true;
+            }
+            visiting.remove(tid);
+            visited.add(tid);
+            return false;
+        }
+
 
         //tid在申请读取pid之前判断，是否能够申请锁
         public synchronized boolean acquireLock(PageId pid, TransactionId tid, int lockType) {
@@ -118,6 +182,7 @@ public class BufferPool {
             }
             //如果没有找到自己的锁，pid上的锁是不是其他事务的写锁，如果是，那么返回false
             if (locks.get(0).lockType == 1) {
+                addDependency(tid,locks.get(0).tid);
                 return false;
             }
             //剩下的情况是pid上的锁是其他事务的读锁，那如果是想要的读锁，那么返回true
@@ -126,6 +191,10 @@ public class BufferPool {
                 return true;
             }
 
+            //剩下的情况就是，pid上的锁是别的事务的读锁，但tid申请写锁
+            for(PageLock lock:locks){
+                addDependency(tid,lock.tid);
+            }
             return false;
         }
 
@@ -184,16 +253,31 @@ public class BufferPool {
 
         //如果tid已经获得了pid的锁，那么直接返回
         boolean canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
-        long startTime=System.currentTimeMillis();
 
 
+        while (!canGetLock){
+            //如果tid没有获得pid的锁，那么就要等待
+            try {
+                //wait();
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            if(pageLockManager.hasCycle(tid)) {
+                //System.out.println(tid+" has deadlock");
+                throw new TransactionAbortedException();
+            }
+            canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
+        }
         /*
         超时策略判断死锁
          */
+        /*long startTime=System.currentTimeMillis();
         while (!canGetLock){
             //如果tid没有获得pid的锁，那么就要等待
 
             if(System.currentTimeMillis()-startTime>=1500){
+                //如果15s没获得锁，就是超时了，那么抛出死锁异常，由上层程序捕获并回滚
                 throw new TransactionAbortedException();
             }
             try {
@@ -203,7 +287,9 @@ public class BufferPool {
                 e.printStackTrace();
             }
             canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
-        }
+        }*/
+
+        //System.out.println(tid+"success get lock");
 
         if(pageHashMap.size()>=numPages)
             evictPage();
