@@ -115,7 +115,6 @@ public class BufferPool {
             //判断dependencyMap是否有环
             //如果有回路，则返回true
             //如果没有回路，则返回false
-
             ArrayList<TransactionId> tids = dependencyMap.get(tid);
             if (tids == null) {
                 return false;
@@ -148,7 +147,6 @@ public class BufferPool {
                         dependency_in.replace(ntid,t);
                         continue;
                     }
-
                     queueList.add(ntid);
                     dependency_in.put(ntid,1);
                 }
@@ -178,10 +176,8 @@ public class BufferPool {
                 if(count==0)
                     break;
             }
-            if(dependency_in.isEmpty())
-                return false;
 
-            return true;
+            return !dependency_in.isEmpty();
         }
 
         private synchronized boolean dfs(TransactionId tid,HashSet<TransactionId>visited,HashSet<TransactionId>visiting) {
@@ -223,23 +219,22 @@ public class BufferPool {
             for (PageLock lock : locks) {
                 if (lock.tid.equals(tid)) {
                     //如果这个锁是自己的
-                    if (lock.lockType == lockType) {
+                    //0-0 1-0 1-1的情况
+                    if (lock.lockType == lockType||lock.lockType==1) {
                         //如果这个锁是自己的，并且是想要的锁类型，那么返回true
                         return true;
                     }
-                    if (lock.lockType == 1) {
-                        //如果已经有了写锁，那么返回true
-                        return true;
-                    }
+                    //0-1的情况
                     //如果已有的锁是读锁，require的是写锁，且pid上只有一把锁，那么将这个锁改为写锁
                     if (locks.size() == 1) {
                         lock.lockType = 1;
                         return true;
                     }
+
                 }
             }
             //如果没有找到自己的锁，pid上的锁是不是其他事务的写锁，如果是，那么返回false
-            if (locks.get(0).lockType == 1) {
+            if (locks.size()==1&&locks.get(0).lockType == 1) {
                 addDependency(tid,locks.get(0).tid);
                 return false;
             }
@@ -284,7 +279,6 @@ public class BufferPool {
 
             }
             return false;
-
         }
     }
     /**
