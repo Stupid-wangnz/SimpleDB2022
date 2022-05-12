@@ -4,7 +4,10 @@ import java.io.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -120,10 +123,65 @@ public class BufferPool {
             //来判断是否有环
             //如果有环，则返回true
             //如果没有环，则返回false
-            //dfs判断是否有环
-            HashSet<TransactionId>visited=new HashSet<>();
-            HashSet<TransactionId>visiting=new HashSet<>();
-            return dfs(tid,visited,visiting);
+            //通过tupo判断是否有环
+
+            //记录入度
+            ConcurrentHashMap<TransactionId,Integer> dependency_in=new ConcurrentHashMap<>();
+            ConcurrentLinkedQueue<TransactionId>queueList=new ConcurrentLinkedQueue<>();
+            queueList.add(tid);
+            dependency_in.put(tid,0);
+
+            //加载入度图
+            while(!queueList.isEmpty()){
+                TransactionId cur=queueList.remove();
+
+                ArrayList<TransactionId> ntids=dependencyMap.get(cur);
+
+                if(ntids==null)
+                    continue;
+
+                for(TransactionId ntid:ntids){
+                    //if ntid has in dependdency_in map, meaning it was visited
+                    if(dependency_in.containsKey(ntid)){
+                        int t=dependency_in.get(ntid);
+                        t++;
+                        dependency_in.replace(ntid,t);
+                        continue;
+                    }
+
+                    queueList.add(ntid);
+                    dependency_in.put(ntid,1);
+                }
+            }
+
+            //拓扑排序，判断环
+            while(true){
+                int count=0;
+                for(TransactionId nexttid:dependency_in.keySet()){
+                    if(dependency_in.get(tid)==null)
+                        continue;
+                    //find in 0 的节点
+                    if(dependency_in.get(tid)==0){
+                        ArrayList<TransactionId>totids=dependencyMap.get(nexttid);
+                        if(totids==null)
+                            continue;
+                        //所以邻接节点入度-1
+                        for(TransactionId totid:totids){
+                            int t=dependency_in.get(totid);
+                            t--;
+                            dependency_in.put(totid,t);
+                        }
+                        dependency_in.remove(nexttid);
+                        count++;
+                    }
+                }
+                if(count==0)
+                    break;
+            }
+            if(dependency_in.isEmpty())
+                return false;
+
+            return true;
         }
 
         private synchronized boolean dfs(TransactionId tid,HashSet<TransactionId>visited,HashSet<TransactionId>visiting) {
@@ -259,7 +317,7 @@ public class BufferPool {
             //如果tid没有获得pid的锁，那么就要等待
             try {
                 //wait();
-                Thread.sleep(100);
+                Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -269,9 +327,7 @@ public class BufferPool {
             }
             canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
         }
-        /*
-        超时策略判断死锁
-         */
+        /*超时策略判断死锁*/
         /*long startTime=System.currentTimeMillis();
         while (!canGetLock){
             //如果tid没有获得pid的锁，那么就要等待
