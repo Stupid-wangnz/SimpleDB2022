@@ -309,12 +309,13 @@ public class BufferPool {
 
         while (!canGetLock){
             //如果tid没有获得pid的锁，那么就要等待
-            try {
+            /*try {
                 //wait();
-                Thread.sleep(10);
+                //Thread.sleep(10);
+                wait(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
-            }
+            }*/
             if(pageLockManager.hasCycle(tid)) {
                 //System.out.println(tid+" has deadlock");
                 throw new TransactionAbortedException();
@@ -330,12 +331,12 @@ public class BufferPool {
                 //如果15s没获得锁，就是超时了，那么抛出死锁异常，由上层程序捕获并回滚
                 throw new TransactionAbortedException();
             }
-            try {
+            *//*try {
                 //wait();
                 Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
-            }
+            }*//*
             canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
         }*/
 

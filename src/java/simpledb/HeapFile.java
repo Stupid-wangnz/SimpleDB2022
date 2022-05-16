@@ -115,18 +115,18 @@ public class HeapFile implements DbFile {
         // some code goes here
         ArrayList<Page> pages=new ArrayList<>();
         for(int i=0;i<numPages();i++){
-            //HeapPage heapPage=(HeapPage) Database.getBufferPool().getPage(tid,new HeapPageId(getId(),i),Permissions.READ_WRITE);
-            HeapPage heapPage=(HeapPage) Database.getBufferPool().getPage(tid,new HeapPageId(getId(),i),Permissions.READ_ONLY);
+            HeapPage heapPage=(HeapPage) Database.getBufferPool().getPage(tid,new HeapPageId(getId(),i),Permissions.READ_WRITE);
+            //HeapPage heapPage=(HeapPage) Database.getBufferPool().getPage(tid,new HeapPageId(getId(),i),Permissions.READ_ONLY);
             if(heapPage.getNumEmptySlots()==0)
             {
                 //该页满了，释放在该页上的锁
                 Database.getBufferPool().releasePage(tid,heapPage.getId());
                 continue;
             }
-            Database.getBufferPool().releasePage(tid,heapPage.getId());
+            //Database.getBufferPool().releasePage(tid,heapPage.getId());
 
             //对有空余的页申请exclusive锁
-            heapPage=(HeapPage) Database.getBufferPool().getPage(tid,new HeapPageId(getId(),i),Permissions.READ_WRITE);
+            //heapPage=(HeapPage) Database.getBufferPool().getPage(tid,new HeapPageId(getId(),i),Permissions.READ_WRITE);
             heapPage.insertTuple(t);
 
             pages.add(heapPage);
