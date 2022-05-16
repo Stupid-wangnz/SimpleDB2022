@@ -149,6 +149,8 @@ public class BTreeTest extends SimpleDbTestBase {
 			
 			// wait for all threads to finish
 	    	waitForDeleterThreads(deleteThreads);
+
+			System.out.println(i+"finish");
 		}
 		assertTrue(insertedTuples.size() < size);
 		size = insertedTuples.size();
@@ -162,6 +164,8 @@ public class BTreeTest extends SimpleDbTestBase {
 		
 			// wait for all threads to finish
 	    	waitForInserterThreads(insertThreads);
+
+			System.out.println(i+"finish");
 		}
 		assertTrue(insertedTuples.size() > size);
 		size = insertedTuples.size();

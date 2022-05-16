@@ -109,6 +109,9 @@ public class BufferPool {
 
         public synchronized void removeDependency(TransactionId tid) {
             dependencyMap.remove(tid);
+            for(TransactionId tid1:dependencyMap.keySet()){
+                dependencyMap.get(tid1).remove(tid);
+            }
         }
 
         public synchronized boolean hasCycle(TransactionId tid) {
@@ -165,7 +168,11 @@ public class BufferPool {
                             continue;
                         //所以邻接节点入度-1
                         for(TransactionId totid:totids){
-                            int t=dependency_in.get(totid);
+                            if(totid==null)
+                                continue;
+                            Integer t=dependency_in.get(totid);
+                            if(t==null)
+                                continue;
                             t--;
                             dependency_in.put(totid,t);
                         }
@@ -309,13 +316,12 @@ public class BufferPool {
 
         while (!canGetLock){
             //如果tid没有获得pid的锁，那么就要等待
-            /*try {
+            try {
                 //wait();
-                //Thread.sleep(10);
-                wait(100);
+                Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
-            }*/
+            }
             if(pageLockManager.hasCycle(tid)) {
                 //System.out.println(tid+" has deadlock");
                 throw new TransactionAbortedException();
@@ -331,12 +337,12 @@ public class BufferPool {
                 //如果15s没获得锁，就是超时了，那么抛出死锁异常，由上层程序捕获并回滚
                 throw new TransactionAbortedException();
             }
-            *//*try {
+            try {
                 //wait();
                 Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
-            }*//*
+            }
             canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
         }*/
 
@@ -414,6 +420,7 @@ public class BufferPool {
         for(PageId pid:pageHashMap.keySet()){
             if(pageLockManager.holdsLock(pid, tid)){
                 pageLockManager.releaseLock(pid, tid);
+                pageLockManager.removeDependency(tid);
             }
         }
     }
