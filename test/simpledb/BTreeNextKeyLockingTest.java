@@ -58,6 +58,7 @@ public class BTreeNextKeyLockingTest extends SimpleDbTestBase {
 		}
 		assertTrue(key != null);
 
+
 		// now find all tuples containing that key and delete them, as well as the next key
 		IndexPredicate ipred = new IndexPredicate(Op.EQUALS, key);
 		DbFileIterator fit = bigFile.indexIterator(tid, ipred);
@@ -80,6 +81,7 @@ public class BTreeNextKeyLockingTest extends SimpleDbTestBase {
 			fit.close();
 		}
 
+
 		Database.getBufferPool().transactionComplete(tid);
 		tid = new TransactionId();
 
@@ -93,7 +95,6 @@ public class BTreeNextKeyLockingTest extends SimpleDbTestBase {
 			keyCountBefore++;
 		}
 		fit.close();
-
 		// In a different thread, try to insert tuples containing the key
 		TransactionId tid1 = new TransactionId();
 		BTreeWriter bw1 = new BTreeWriter(tid1, bigFile, ((IntField) key).getValue(), 1);
@@ -101,6 +102,7 @@ public class BTreeNextKeyLockingTest extends SimpleDbTestBase {
 
 		// allow thread to start
 		Thread.sleep(POLL_INTERVAL);
+
 
 		// search for tuples less than or equal to the key
 		ipred = new IndexPredicate(Op.LESS_THAN_OR_EQ, key);

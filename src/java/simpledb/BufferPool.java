@@ -2,10 +2,7 @@ package simpledb;
 
 import java.io.*;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
@@ -22,14 +19,18 @@ import java.util.concurrent.locks.Lock;
  * @Threadsafe, all fields are final
  */
 public class BufferPool {
-    /** Bytes per page, including header. */
+    /**
+     * Bytes per page, including header.
+     */
     private static final int DEFAULT_PAGE_SIZE = 4096;
 
     private static int pageSize = DEFAULT_PAGE_SIZE;
-    
-    /** Default number of pages passed to the constructor. This is used by
-    other classes. BufferPool should use the numPages argument to the
-    constructor instead. */
+
+    /**
+     * Default number of pages passed to the constructor. This is used by
+     * other classes. BufferPool should use the numPages argument to the
+     * constructor instead.
+     */
     public static final int DEFAULT_PAGES = 50;
 
     /**
@@ -39,37 +40,45 @@ public class BufferPool {
      */
     public BufferPool(int numPages) {
         // some code goes here
-        this.numPages=numPages;
-        pageHashMap=new ConcurrentHashMap<>(numPages);
+        this.numPages = numPages;
+        pageHashMap = new ConcurrentHashMap<>(numPages);
+        pageRefCount = new ConcurrentHashMap<>(numPages);
+        pageLockManager = new PageLockManager();
 
-        pageLockManager=new PageLockManager();
+        lockManager = new LockManager();
+        SLEEP_INTERVAL = 500;
     }
 
 
-    private ConcurrentHashMap<PageId,Page> pageHashMap;
+    private ConcurrentHashMap<PageId, Page> pageHashMap;
+    private ConcurrentHashMap<PageId,Integer>pageRefCount;
     private int numPages;
     PageLockManager pageLockManager;
 
+    LockManager lockManager;
+    private final long SLEEP_INTERVAL;
+
     public static int getPageSize() {
-      return pageSize;
-    }
-    
-    // THIS FUNCTION SHOULD ONLY BE USED FOR TESTING!!
-    public static void setPageSize(int pageSize) {
-    	BufferPool.pageSize = pageSize;
-    }
-    
-    // THIS FUNCTION SHOULD ONLY BE USED FOR TESTING!!
-    public static void resetPageSize() {
-    	BufferPool.pageSize = DEFAULT_PAGE_SIZE;
+        return pageSize;
     }
 
-    private class PageLock{
+    // THIS FUNCTION SHOULD ONLY BE USED FOR TESTING!!
+    public static void setPageSize(int pageSize) {
+        BufferPool.pageSize = pageSize;
+    }
+
+    // THIS FUNCTION SHOULD ONLY BE USED FOR TESTING!!
+    public static void resetPageSize() {
+        BufferPool.pageSize = DEFAULT_PAGE_SIZE;
+    }
+
+    private class PageLock {
         TransactionId tid;
         int lockType;//0 is shared lock, 1 is exclusive lock
-        public PageLock(TransactionId tid, int lockType){
-            this.tid=tid;
-            this.lockType=lockType;
+
+        public PageLock(TransactionId tid, int lockType) {
+            this.tid = tid;
+            this.lockType = lockType;
         }
     }
 
@@ -109,7 +118,7 @@ public class BufferPool {
 
         public synchronized void removeDependency(TransactionId tid) {
             dependencyMap.remove(tid);
-            for(TransactionId tid1:dependencyMap.keySet()){
+            for (TransactionId tid1 : dependencyMap.keySet()) {
                 dependencyMap.get(tid1).remove(tid);
             }
         }
@@ -128,87 +137,64 @@ public class BufferPool {
             //通过tupo判断是否有环
 
             //记录入度
-            ConcurrentHashMap<TransactionId,Integer> dependency_in=new ConcurrentHashMap<>();
-            ConcurrentLinkedQueue<TransactionId>queueList=new ConcurrentLinkedQueue<>();
+            ConcurrentHashMap<TransactionId, Integer> dependency_in = new ConcurrentHashMap<>();
+            ConcurrentLinkedQueue<TransactionId> queueList = new ConcurrentLinkedQueue<>();
             queueList.add(tid);
-            dependency_in.put(tid,0);
+            dependency_in.put(tid, 0);
 
             //加载入度图
-            while(!queueList.isEmpty()){
-                TransactionId cur=queueList.remove();
+            while (!queueList.isEmpty()) {
+                TransactionId cur = queueList.remove();
 
-                ArrayList<TransactionId> ntids=dependencyMap.get(cur);
+                ArrayList<TransactionId> ntids = dependencyMap.get(cur);
 
-                if(ntids==null)
+                if (ntids == null)
                     continue;
 
-                for(TransactionId ntid:ntids){
+                for (TransactionId ntid : ntids) {
                     //if ntid has in dependdency_in map, meaning it was visited
-                    if(dependency_in.containsKey(ntid)){
-                        int t=dependency_in.get(ntid);
+                    if (dependency_in.containsKey(ntid)) {
+                        int t = dependency_in.get(ntid);
                         t++;
-                        dependency_in.replace(ntid,t);
+                        dependency_in.replace(ntid, t);
                         continue;
                     }
                     queueList.add(ntid);
-                    dependency_in.put(ntid,1);
+                    dependency_in.put(ntid, 1);
                 }
             }
 
             //拓扑排序，判断环
-            while(true){
-                int count=0;
-                for(TransactionId nexttid:dependency_in.keySet()){
-                    if(dependency_in.get(tid)==null)
+            while (true) {
+                int count = 0;
+                for (TransactionId nexttid : dependency_in.keySet()) {
+                    if (dependency_in.get(tid) == null)
                         continue;
                     //find in 0 的节点
-                    if(dependency_in.get(tid)==0){
-                        ArrayList<TransactionId>totids=dependencyMap.get(nexttid);
-                        if(totids==null)
+                    if (dependency_in.get(tid) == 0) {
+                        ArrayList<TransactionId> totids = dependencyMap.get(nexttid);
+                        if (totids == null)
                             continue;
                         //所以邻接节点入度-1
-                        for(TransactionId totid:totids){
-                            if(totid==null)
+                        for (TransactionId totid : totids) {
+                            if (totid == null)
                                 continue;
-                            Integer t=dependency_in.get(totid);
-                            if(t==null)
+                            Integer t = dependency_in.get(totid);
+                            if (t == null)
                                 continue;
                             t--;
-                            dependency_in.put(totid,t);
+                            dependency_in.put(totid, t);
                         }
                         dependency_in.remove(nexttid);
                         count++;
                     }
                 }
-                if(count==0)
+                if (count == 0)
                     break;
             }
 
             return !dependency_in.isEmpty();
         }
-
-        private synchronized boolean dfs(TransactionId tid,HashSet<TransactionId>visited,HashSet<TransactionId>visiting) {
-            visiting.add(tid);
-            ArrayList<TransactionId> tids = dependencyMap.get(tid);
-            if(tids==null) {
-                visiting.remove(tid);
-                visited.add(tid);
-                return false;
-            }
-            for(TransactionId ntid:tids){
-                if(visiting.contains(ntid))
-                    return true;
-                if(visited.contains(ntid))
-                    continue;
-
-                if(dfs(ntid,visited,visiting))
-                    return true;
-            }
-            visiting.remove(tid);
-            visited.add(tid);
-            return false;
-        }
-
 
         //tid在申请读取pid之前判断，是否能够申请锁
         public synchronized boolean acquireLock(PageId pid, TransactionId tid, int lockType) {
@@ -313,39 +299,25 @@ public class BufferPool {
         //如果tid已经获得了pid的锁，那么直接返回
         boolean canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
 
-
         while (!canGetLock){
-            //如果tid没有获得pid的锁，那么就要等待
-            try {
-                //wait();
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+
             if(pageLockManager.hasCycle(tid)) {
                 //System.out.println(tid+" has deadlock");
                 throw new TransactionAbortedException();
             }
             canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
         }
+
         /*超时策略判断死锁*/
         /*long startTime=System.currentTimeMillis();
         while (!canGetLock){
             //如果tid没有获得pid的锁，那么就要等待
-
             if(System.currentTimeMillis()-startTime>=1500){
                 //如果15s没获得锁，就是超时了，那么抛出死锁异常，由上层程序捕获并回滚
                 throw new TransactionAbortedException();
             }
-            try {
-                //wait();
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
             canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
         }*/
-
         //System.out.println(tid+"success get lock");
 
         if(pageHashMap.size()>=numPages)
@@ -355,8 +327,9 @@ public class BufferPool {
             DbFile dbFile=Database.getCatalog().getDatabaseFile(pid.getTableId());
             Page page= dbFile.readPage(pid);
             pageHashMap.put(pid,page);
+            pageRefCount.put(pid,0);
         }
-
+        pageRefCount.put(pid,pageRefCount.get(pid)+1);
         return pageHashMap.get(pid);
         //return null;
     }
@@ -395,7 +368,6 @@ public class BufferPool {
         // not necessary for lab1|lab2
 
         return pageLockManager.holdsLock(p, tid);
-        //return false;
     }
 
     /**
@@ -423,11 +395,12 @@ public class BufferPool {
                 pageLockManager.removeDependency(tid);
             }
         }
-    }
 
+    }
 
     private synchronized void rollbackPages(TransactionId tid) throws IOException {
         //事务tid中断，回滚tid中的所有页面
+
         for(PageId pid:pageHashMap.keySet()){
             if(pageLockManager.holdsLock(pid, tid)){
                 DbFile dbFile=Database.getCatalog().getDatabaseFile(pid.getTableId());
@@ -435,6 +408,7 @@ public class BufferPool {
                 pageHashMap.replace(pid,page);
             }
         }
+
     }
 
     /**
@@ -507,8 +481,6 @@ public class BufferPool {
                 flushPage(page.getId());
             }
         }
-
-
     }
 
     /** Remove the specific page id from the buffer pool.
@@ -563,17 +535,28 @@ public class BufferPool {
     private synchronized  void evictPage() throws DbException {
         // some code goes here
         // not necessary for lab1
-        Page removedPage=null;
-        for(Page page:pageHashMap.values()){
-            if(page.isDirty()==null){
-                removedPage=page;
-                break;
+
+        PageId pid=null;
+        int count=-1;
+
+        for(PageId pageId:pageHashMap.keySet()){
+            if(pageHashMap.get(pageId).isDirty()!=null){
+                continue;
+            }
+            if(pid==null){
+                pid=pageId;
+                count=pageRefCount.get(pageId);
+            }
+            else if(pageRefCount.get(pageId)<count){
+                pid=pageId;
+                count=pageRefCount.get(pageId);
             }
         }
 
-        if(removedPage==null)
+        if(pid==null)
             throw new DbException("all dirty page");
-        discardPage(removedPage.getId());
+
+        discardPage(pid);
     }
 }
 

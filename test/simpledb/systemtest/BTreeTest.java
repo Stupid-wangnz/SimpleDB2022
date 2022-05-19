@@ -120,7 +120,8 @@ public class BTreeTest extends SimpleDbTestBase {
 			BTreeInserter bi = startInserter(bf, getRandomTupleData(), insertedTuples);
 			insertThreads.add(bi);
 		}
-		
+
+
 		// wait for all threads to finish
 		waitForInserterThreads(insertThreads);	
 		assertTrue(insertedTuples.size() > size);
