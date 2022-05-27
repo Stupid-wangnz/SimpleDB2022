@@ -201,23 +201,28 @@ public class BTreeFile implements DbFile {
 			BTreeLeafPage leaf = (BTreeLeafPage) getPage(tid,dirtypages,pid,perm);
 			return leaf;
 		}
-		//否则需要在内部页内查找
-		BTreeInternalPage cur_page=(BTreeInternalPage) getPage(tid,dirtypages,pid,Permissions.READ_ONLY);
 
+		//否则需要在内部页内查找
+		BTreeInternalPage cur_page=(BTreeInternalPage) getPage(tid,dirtypages,pid,perm);
+		Iterator<BTreeEntry>iterator=cur_page.iterator();
+		BTreeEntry curBTreeEntry;
 		//If f is null, it finds the left-most leaf page -- used for the iterator
 		if(f==null){
 			return findLeafPage(tid,dirtypages,cur_page.iterator().next().getLeftChild(),perm,null);
 		}
 
 		//在页内递归Entry找到对应的位置
-		Iterator<BTreeEntry>iterator=cur_page.iterator();
-		BTreeEntry curBTreeEntry=iterator.next();
-		while(iterator.hasNext()){
-			if(curBTreeEntry.getKey().compare(Op.GREATER_THAN_OR_EQ,f)){
-				return findLeafPage(tid,dirtypages,curBTreeEntry.getLeftChild(),perm,f );
-			}
+		if(iterator.hasNext()){
 			curBTreeEntry=iterator.next();
 		}
+		else{
+			throw new IllegalArgumentException("No such key in the B+ tree");
+		}
+
+		while(f.compare(Op.GREATER_THAN,curBTreeEntry.getKey())&&iterator.hasNext()){
+			curBTreeEntry=iterator.next();
+		}
+
 		if(curBTreeEntry.getKey().compare(Op.GREATER_THAN_OR_EQ,f))
 			return findLeafPage(tid,dirtypages,curBTreeEntry.getLeftChild(),perm,f);
 

@@ -145,7 +145,6 @@ public class BufferPool {
             //加载入度图
             while (!queueList.isEmpty()) {
                 TransactionId cur = queueList.remove();
-
                 ArrayList<TransactionId> ntids = dependencyMap.get(cur);
 
                 if (ntids == null)
@@ -154,7 +153,7 @@ public class BufferPool {
                 for (TransactionId ntid : ntids) {
                     //if ntid has in dependdency_in map, meaning it was visited
                     if (dependency_in.containsKey(ntid)) {
-                        int t = dependency_in.get(ntid);
+                        Integer t = dependency_in.get(ntid);
                         t++;
                         dependency_in.replace(ntid, t);
                         continue;
@@ -167,25 +166,28 @@ public class BufferPool {
             //拓扑排序，判断环
             while (true) {
                 int count = 0;
-                for (TransactionId nexttid : dependency_in.keySet()) {
-                    if (dependency_in.get(tid) == null)
+                for (TransactionId curtid : dependency_in.keySet()) {
+                    /*if (dependency_in.get(curtid) == null){
+                        dependency_in.remove(curtid);
                         continue;
+                    }*/
                     //find in 0 的节点
-                    if (dependency_in.get(tid) == 0) {
-                        ArrayList<TransactionId> totids = dependencyMap.get(nexttid);
-                        if (totids == null)
+                    if (dependency_in.get(curtid).equals(0)) {
+                        ArrayList<TransactionId> linktids = dependencyMap.get(curtid);
+                        if (linktids == null) {
+                            dependency_in.remove(curtid);
+                            count++;
                             continue;
+                        }
                         //所以邻接节点入度-1
-                        for (TransactionId totid : totids) {
-                            if (totid == null)
-                                continue;
+                        for (TransactionId totid : linktids) {
                             Integer t = dependency_in.get(totid);
                             if (t == null)
                                 continue;
                             t--;
                             dependency_in.put(totid, t);
                         }
-                        dependency_in.remove(nexttid);
+                        dependency_in.remove(curtid);
                         count++;
                     }
                 }
@@ -299,35 +301,40 @@ public class BufferPool {
         //如果tid已经获得了pid的锁，那么直接返回
         boolean canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
 
-        while (!canGetLock){
+        /*while (!canGetLock){
 
             if(pageLockManager.hasCycle(tid)) {
                 //System.out.println(tid+" has deadlock");
                 throw new TransactionAbortedException();
             }
             canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
-        }
+        }*/
 
         /*超时策略判断死锁*/
-        /*long startTime=System.currentTimeMillis();
+        long startTime=System.currentTimeMillis();
         while (!canGetLock){
             //如果tid没有获得pid的锁，那么就要等待
-            if(System.currentTimeMillis()-startTime>=1500){
-                //如果15s没获得锁，就是超时了，那么抛出死锁异常，由上层程序捕获并回滚
+            if(System.currentTimeMillis()-startTime>=1000){
+                //如果10s没获得锁，就是超时了，那么抛出死锁异常，由上层程序捕获并回滚
                 throw new TransactionAbortedException();
             }
             canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
-        }*/
+        }
         //System.out.println(tid+"success get lock");
 
-        if(pageHashMap.size()>=numPages)
-            evictPage();
+        /*if(pageHashMap.size()>=numPages)
+            evictPage();*/
 
         if(!pageHashMap.containsKey(pid)){
             DbFile dbFile=Database.getCatalog().getDatabaseFile(pid.getTableId());
             Page page= dbFile.readPage(pid);
+
+            if(numPages==pageHashMap.size()){
+                evictPage();
+            }
+
             pageHashMap.put(pid,page);
-            pageRefCount.put(pid,0);
+            pageRefCount.put(pid,1);
         }
         pageRefCount.put(pid,pageRefCount.get(pid)+1);
         return pageHashMap.get(pid);
@@ -390,8 +397,8 @@ public class BufferPool {
         }
 
         for(PageId pid:pageHashMap.keySet()){
-            if(pageLockManager.holdsLock(pid, tid)){
-                pageLockManager.releaseLock(pid, tid);
+            if(holdsLock(tid,pid)){
+                releasePage(tid,pid);
                 pageLockManager.removeDependency(tid);
             }
         }
@@ -402,10 +409,11 @@ public class BufferPool {
         //事务tid中断，回滚tid中的所有页面
 
         for(PageId pid:pageHashMap.keySet()){
-            if(pageLockManager.holdsLock(pid, tid)){
+            Page page=pageHashMap.get(pid);
+            if(page.isDirty()==tid){
                 DbFile dbFile=Database.getCatalog().getDatabaseFile(pid.getTableId());
-                Page page=dbFile.readPage(pid);
-                pageHashMap.replace(pid,page);
+                page=dbFile.readPage(pid);
+                pageHashMap.put(pid,page);
             }
         }
 
@@ -496,6 +504,7 @@ public class BufferPool {
         // not necessary for lab1
 
         pageHashMap.remove(pid);
+        pageRefCount.remove(pid);
     }
 
     /**
@@ -521,9 +530,9 @@ public class BufferPool {
         // some code goes here
         // not necessary for lab1|lab2
 
-        for(Page page:pageHashMap.values()){
-            if(page.isDirty()!=null&&page.isDirty().equals(tid)){
-                flushPage(page.getId());
+        for(PageId pid:pageHashMap.keySet()){
+            if(pageHashMap.get(pid).isDirty()==tid){
+                flushPage(pid);
             }
         }
     }
@@ -535,6 +544,8 @@ public class BufferPool {
     private synchronized  void evictPage() throws DbException {
         // some code goes here
         // not necessary for lab1
+
+        assert numPages==pageHashMap.size():"numPages==pageHashMap.size()";
 
         PageId pid=null;
         int count=-1;

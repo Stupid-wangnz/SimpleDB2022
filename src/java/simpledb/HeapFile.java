@@ -123,23 +123,27 @@ public class HeapFile implements DbFile {
                 Database.getBufferPool().releasePage(tid,heapPage.getId());
                 continue;
             }
-            Database.getBufferPool().releasePage(tid,heapPage.getId());
+            //Database.getBufferPool().releasePage(tid,heapPage.getId());
 
             //对有空余的页申请exclusive锁
             heapPage=(HeapPage) Database.getBufferPool().getPage(tid,new HeapPageId(getId(),i),Permissions.READ_WRITE);
             heapPage.insertTuple(t);
 
             pages.add(heapPage);
+            //Database.getBufferPool().releasePage(tid,heapPage.getId());
             return pages;
         }
 
-        BufferedOutputStream bufferedOutputStream=new BufferedOutputStream(new FileOutputStream(file,true));
-        bufferedOutputStream.write(HeapPage.createEmptyPageData());
-        bufferedOutputStream.close();
 
-        HeapPage heapPage=(HeapPage) Database.getBufferPool().getPage(tid,new HeapPageId(getId(),numPages()-1),Permissions.READ_WRITE);
-        heapPage.insertTuple(t);
-        pages.add(heapPage);
+        HeapPageId pid=new HeapPageId(getId(),numPages());
+        byte[] data=HeapPage.createEmptyPageData();
+        HeapPage heapPage=new HeapPage(pid,data);
+        writePage(heapPage);
+
+        HeapPage page=(HeapPage) Database.getBufferPool().getPage(tid,pid,Permissions.READ_WRITE);
+        page.insertTuple(t);
+
+        pages.add(page);
         return pages;
 
        // return null;
@@ -156,7 +160,7 @@ public class HeapFile implements DbFile {
 
         ArrayList<Page> pages=new ArrayList<>();
         pages.add(heapPage);
-
+        //Database.getBufferPool().releasePage(tid,heapPage.getId());
         return pages;
 
         //return null;
