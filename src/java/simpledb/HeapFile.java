@@ -90,10 +90,11 @@ public class HeapFile implements DbFile {
     // see DbFile.java for javadocs
     public void writePage(Page page) throws IOException {
         // some code goes here
-
+        //获得pageno信息
         int pageno=page.getId().getPageNumber();
-
+        //打开file文件
         RandomAccessFile randomAccessFile=new RandomAccessFile(getFile(),"rw");
+        //位置偏移量
         int st=pageno*BufferPool.getPageSize();
         randomAccessFile.seek(st);
         randomAccessFile.write(page.getPageData());
@@ -139,7 +140,7 @@ public class HeapFile implements DbFile {
         byte[] data=HeapPage.createEmptyPageData();
         HeapPage heapPage=new HeapPage(pid,data);
         writePage(heapPage);
-
+        //申请读写锁写入tuple
         HeapPage page=(HeapPage) Database.getBufferPool().getPage(tid,pid,Permissions.READ_WRITE);
         page.insertTuple(t);
 
@@ -155,6 +156,7 @@ public class HeapFile implements DbFile {
         // some code goes here
 
         PageId pageId=t.getRecordId().getPageId();
+        //通过bufferpool删除tuple，获取的是读写锁
         HeapPage heapPage=(HeapPage)Database.getBufferPool().getPage(tid,pageId,Permissions.READ_WRITE);
         heapPage.deleteTuple(t);
 
@@ -207,6 +209,7 @@ public class HeapFile implements DbFile {
                 return true;
             else
             {
+                //判断下一页的page是否还有tuple
                 if(currentPage< heapFile.numPages()-1)
                 {
                     currentPage++;

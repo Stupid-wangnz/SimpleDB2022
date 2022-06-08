@@ -260,6 +260,7 @@ public class HeapPage implements Page {
         if(tuples[tupleno]==null) throw new DbException("delete fail");
         if(!tuples[tupleno].equals(t)) {throw new DbException("delete fail");}
 
+        //删除成功，将slot置为false
         this.markSlotUsed(tupleno,false);
         tuples[tupleno]=null;
 
@@ -279,7 +280,7 @@ public class HeapPage implements Page {
         if(!t.getTupleDesc().equals(this.td)||this.getNumEmptySlots()==0)
             throw new DbException("insert fail");
 
-
+        //找到一个slot为false为位置，插入成功置为true
         for(int i=0;i<this.numSlots;i++){
             if(!this.isSlotUsed(i))
             {

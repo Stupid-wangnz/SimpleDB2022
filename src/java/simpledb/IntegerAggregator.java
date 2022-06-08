@@ -66,7 +66,7 @@ public class IntegerAggregator implements Aggregator {
         int value=((IntField)aField).getValue();
 
         switch (this.what){
-            case MIN:
+            case MIN://比较返回最小值
                 if(!hashMap.containsKey(gbField)){
                     hashMap.put(gbField,value);
                 }
@@ -74,7 +74,7 @@ public class IntegerAggregator implements Aggregator {
                     hashMap.replace(gbField,Math.min(hashMap.get(gbField),value));
                 break;
 
-            case MAX:
+            case MAX://比较返回最大值
                 if(!hashMap.containsKey(gbField)){
                     hashMap.put(gbField,value);
                 }
@@ -82,14 +82,14 @@ public class IntegerAggregator implements Aggregator {
                     hashMap.replace(gbField,Math.max(hashMap.get(gbField),value));
                 break;
 
-            case COUNT:
+            case COUNT://递增+1
                 if(hashMap.containsKey(gbField)){
                     hashMap.replace(gbField,hashMap.get(gbField)+1);
                 }
                 else
                     hashMap.put(gbField,1);
                 break;
-            case SUM:
+            case SUM://累和
                 if(!hashMap.containsKey(gbField)){
                     hashMap.put(gbField,value);
                 }
@@ -100,7 +100,7 @@ public class IntegerAggregator implements Aggregator {
                     hashMap.replace(gbField, sum);
                 }
                 break;
-            case AVG:
+            case AVG://SUM除以COUNT
                 if(!hashMap.containsKey(gbField)){
                     Integer[]arr=new Integer[2];
                     arr[0]=value;

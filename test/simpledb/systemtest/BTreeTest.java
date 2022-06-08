@@ -125,6 +125,7 @@ public class BTreeTest extends SimpleDbTestBase {
 		// wait for all threads to finish
 		waitForInserterThreads(insertThreads);
 		assertTrue(insertedTuples.size() > size);
+
 		
 		// now insert and delete tuples at the same time
 		System.out.println("Inserting and deleting tuples...");
@@ -138,6 +139,8 @@ public class BTreeTest extends SimpleDbTestBase {
 		// wait for all threads to finish
 		waitForInserterThreads(insertThreads);
 		waitForDeleterThreads(deleteThreads);
+
+
 		int numPages = bf.numPages();
 		size = insertedTuples.size();
 		
@@ -204,6 +207,7 @@ public class BTreeTest extends SimpleDbTestBase {
 		
 		// now make sure all the tuples are in order and we have the right number
 		System.out.println("Performing sanity checks...");
+
     	DbFileIterator it = bf.iterator(tid);
 		Field prev = null;
 		it.open();
@@ -211,6 +215,7 @@ public class BTreeTest extends SimpleDbTestBase {
 		while(it.hasNext()) {
 			Tuple t = it.next();
 			if(prev != null) {
+				//System.out.println(prev.toString() + " " + t.getField(bf.keyField()).toString());
 				assertTrue(t.getField(bf.keyField()).compare(Op.GREATER_THAN_OR_EQ, prev));
 			}
 			prev = t.getField(bf.keyField());

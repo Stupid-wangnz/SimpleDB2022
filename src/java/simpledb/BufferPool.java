@@ -45,7 +45,6 @@ public class BufferPool {
         pageRefCount = new ConcurrentHashMap<>(numPages);
         pageLockManager = new PageLockManager();
 
-        lockManager = new LockManager();
         SLEEP_INTERVAL = 500;
     }
 
@@ -55,7 +54,7 @@ public class BufferPool {
     private int numPages;
     PageLockManager pageLockManager;
 
-    LockManager lockManager;
+    static int time_count=0;
     private final long SLEEP_INTERVAL;
 
     public static int getPageSize() {
@@ -72,7 +71,7 @@ public class BufferPool {
         BufferPool.pageSize = DEFAULT_PAGE_SIZE;
     }
 
-    private class PageLock {
+    private static class PageLock {
         TransactionId tid;
         int lockType;//0 is shared lock, 1 is exclusive lock
 
@@ -82,7 +81,7 @@ public class BufferPool {
         }
     }
 
-    private class PageLockManager {
+    private static class PageLockManager {
         ConcurrentHashMap<PageId, ArrayList<PageLock>> pageLocks;
         /*依赖图，用来判断是否有环出现死锁
         依赖图的逻辑:每个结点就是hashmap里的key，对应的value是key指向的其他结点的集合
@@ -229,6 +228,7 @@ public class BufferPool {
                 }
             }
             //如果没有找到自己的锁，pid上的锁是不是其他事务的写锁，如果是，那么返回false
+            locks.iterator();
             if (locks.size()==1&&locks.get(0).lockType == 1) {
                 addDependency(tid,locks.get(0).tid);
                 return false;
@@ -305,18 +305,20 @@ public class BufferPool {
 
             if(pageLockManager.hasCycle(tid)) {
                 //System.out.println(tid+" has deadlock");
-                throw new TransactionAbortedException();
+                //pageLockManager.removeDependency(tid);
+                if(!pageLockManager.acquireLock(pid,tid,lockType))
+                    throw new TransactionAbortedException();
             }
             canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
         }*/
 
         /*超时策略判断死锁*/
         long startTime=System.currentTimeMillis();
-        long timeout = new Random().nextInt(2000) + 1000;
+        long timeout = new Random().nextInt(2000) + 2000;
         while (!canGetLock){
             //如果tid没有获得pid的锁，那么就要等待
             if(System.currentTimeMillis()-startTime>=timeout){
-                //如果10s没获得锁，就是超时了，那么抛出死锁异常，由上层程序捕获并回滚
+                //如果超时没获得锁，那么抛出死锁异常，由上层程序捕获并回滚
                 throw new TransactionAbortedException();
             }
             canGetLock=pageLockManager.acquireLock(pid, tid, lockType);
@@ -325,6 +327,9 @@ public class BufferPool {
 
         /*if(pageHashMap.size()>=numPages)
             evictPage();*/
+
+        time_count++;
+
 
         if(!pageHashMap.containsKey(pid)){
             DbFile dbFile=Database.getCatalog().getDatabaseFile(pid.getTableId());
@@ -335,9 +340,18 @@ public class BufferPool {
             }
 
             pageHashMap.put(pid,page);
-            pageRefCount.put(pid,1);
+            pageRefCount.put(pid,0);
+            //pageRefCount.put(pid,time_count);
         }
+
+        if(!pageRefCount.containsKey(pid)){
+            pageRefCount.put(pid,0);
+            //pageRefCount.put(pid,time_count);
+        }
+
+        //LRU策略更新buffer
         pageRefCount.put(pid,pageRefCount.get(pid)+1);
+        //pageRefCount.put(pid,time_count);
         return pageHashMap.get(pid);
         //return null;
     }
@@ -396,11 +410,10 @@ public class BufferPool {
         else{
             rollbackPages(tid);
         }
-
+        pageLockManager.removeDependency(tid);
         for(PageId pid:pageHashMap.keySet()){
             if(holdsLock(tid,pid)){
                 releasePage(tid,pid);
-                pageLockManager.removeDependency(tid);
             }
         }
 
@@ -462,7 +475,7 @@ public class BufferPool {
      * @param tid the transaction deleting the tuple.
      * @param t the tuple to delete
      */
-    public  void deleteTuple(TransactionId tid, Tuple t)
+    public void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         int tableId=t.getRecordId().getPageId().getTableId();
@@ -549,7 +562,7 @@ public class BufferPool {
         assert numPages==pageHashMap.size():"numPages==pageHashMap.size()";
 
         PageId pid=null;
-        int count=-1;
+        int count=Integer.MAX_VALUE;
 
         for(PageId pageId:pageHashMap.keySet()){
             if(pageHashMap.get(pageId).isDirty()!=null){

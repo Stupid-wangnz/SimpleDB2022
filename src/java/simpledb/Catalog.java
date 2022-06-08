@@ -54,11 +54,13 @@ public class Catalog {
         // some code goes here
         int index= tableIDs.indexOf(file.getId());
 
+        //在内部找到了对应file，直接替换
         if(index>=0){
             tables.set(index,new Table(file,name,pkeyField));
             return;
         }
 
+        //插入新的table
         for(int i=tables.size()-1;i>=0;i--) {
             if (tables.get(i).name.equals(name)) {
                 tables.set(i, new Table(file, name, pkeyField));

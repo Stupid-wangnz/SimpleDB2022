@@ -167,7 +167,7 @@ public class Aggregate extends Operator {
      */
     public TupleDesc getTupleDesc() {
 	// some code goes here
-
+        //组合merge的信息成新的tuple
         if(this.gfield==Aggregator.NO_GROUPING)
             return new TupleDesc(new Type[]{child.getTupleDesc().getFieldType(afield)},new String[]{child.getTupleDesc().getFieldName(afield)});
 
